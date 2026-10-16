@@ -1,0 +1,9 @@
+export const money=(value:string|number|bigint=0)=>'Rp'+new Intl.NumberFormat('id-ID').format(BigInt(value));
+export const count=(value:string|number|bigint=0)=>new Intl.NumberFormat('id-ID').format(BigInt(value));
+export function kgInput(value:string|number|bigint){const n=BigInt(value),negative=n<0n,abs=negative?-n:n;return (negative?'-':'')+(abs/1000n).toString()+(abs%1000n?','+(abs%1000n).toString().padStart(3,'0').replace(/0+$/,''):'');}
+export function grams(value:string){if(!/^\d+(,\d{1,3})?$/.test(value.trim()))throw new Error('Jumlah kg maksimal tiga angka desimal. Gunakan koma dan tulis angka ribuan tanpa titik.');const v=value.trim().replace(',','.');const [a,b='']=v.split('.');return (BigInt(a)*1000n+BigInt(b.padEnd(3,'0'))).toString();}
+export function quantity(value:string|number|bigint,kind:string){if(kind==='FINISHED')return count(value)+' unit';const n=BigInt(value),negative=n<0n,abs=negative?-n:n;return (negative?'-':'')+count(abs/1000n)+(abs%1000n?','+(abs%1000n).toString().padStart(3,'0').replace(/0+$/,''):'')+' kg';}
+export const day=(timezone='Asia/Jakarta')=>new Intl.DateTimeFormat('en-CA',{timeZone:timezone,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+export const shortDate=(value:string)=>new Intl.DateTimeFormat('id-ID',{dateStyle:'medium',timeZone:'UTC'}).format(new Date(value.length===10?value+'T00:00:00Z':value));
+export const timestamp=(value:string)=>new Intl.DateTimeFormat('id-ID',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Jakarta'}).format(new Date(value));
+export const statusNames:Record<string,string>={DRAFT:'Draf',FINALIZED:'Final',VOIDED:'Dibatalkan',COMPLETED:'Selesai',OPEN:'Aktif',CANCELLED:'Dibatalkan',NEEDS_REVIEW:'Perlu ditinjau',PUBLISHED:'Terbit',OWNER:'Owner',ADMIN:'Admin',NO_SALES:'Tidak ada penjualan',OFFLINE:'Offline',WHATSAPP:'WhatsApp',SHOPEE:'Shopee',TOKOPEDIA:'Tokopedia'};

@@ -1,0 +1,11 @@
+services:
+  db_test:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: tani_test
+      POSTGRES_USER: tani_test
+      POSTGRES_PASSWORD: ${TEST_DB_PASSWORD:?Choose TEST_DB_PASSWORD}
+    ports:
+      - "127.0.0.1:5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
