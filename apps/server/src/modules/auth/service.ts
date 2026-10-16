@@ -42,8 +42,8 @@ export function sessionMiddleware(db:Db){return async(req:Request,_res:Response,
  }catch(e){next(e);}
 };}
 export function requireAuth(req:Request,_res:Response,next:NextFunction){if(!req.actor)return next(new AppError(401,'AUTH_REQUIRED','Silakan masuk untuk melanjutkan.'));next();}
-export function originGuard(req:Request,_res:Response,next:NextFunction){if(['GET','HEAD','OPTIONS'].includes(req.method))return next();if(req.get('origin')!==appOrigin)return next(new AppError(403,'ORIGIN_REJECTED','Asal permintaan tidak diizinkan. Muat ulang aplikasi.'));next();}
-export function csrfGuard(req:Request,_res:Response,next:NextFunction){if(['GET','HEAD','OPTIONS'].includes(req.method))return next();const supplied=req.get('x-csrf-token')??'';if(!req.csrf||!equal(supplied,req.csrf))return next(new AppError(403,'CSRF_REJECTED','Sesi formulir tidak valid. Muat ulang halaman.'));next();}
+export function originGuard(req:Request,_res:Response,next:NextFunction){if(['GET','HEAD','OPTIONS'].includes(req.method))return next();if(req.get('origin')!==appOrigin)return next(new AppError(403,'ORIGIN_REJECTED','Halaman perlu dimuat ulang. Silakan coba lagi.'));next();}
+export function csrfGuard(req:Request,_res:Response,next:NextFunction){if(['GET','HEAD','OPTIONS'].includes(req.method))return next();const supplied=req.get('x-csrf-token')??'';if(!req.csrf||!equal(supplied,req.csrf))return next(new AppError(403,'CSRF_REJECTED','Halaman sudah kedaluwarsa. Muat ulang lalu coba lagi.'));next();}
 export async function logout(db:Db,sessionHash:string){await db.all(sql`DELETE FROM sessions WHERE token_hash=${sessionHash}`);}
 export async function forgotPassword(db:Db,email:string,ip:string){
  requireEmail();await throttle(db,'forgot-ip:'+ip,20);await throttle(db,'forgot:'+email,4);
@@ -70,7 +70,7 @@ export async function runResetEmailJob(db:Db,limit=5){
     requireValue((await tx.all(sql`SELECT id FROM users WHERE id=${u.id} AND active FOR UPDATE`))[0]);
     await tx.all(sql`UPDATE auth_tokens SET consumed_at=now() WHERE email=${u.email} AND kind='RESET' AND consumed_at IS NULL`);
     await tx.all(sql`INSERT INTO auth_tokens(org_id,email,token_hash,kind,expires_at) VALUES(${u.org_id},${u.email},${hash(token)},'RESET',now()+interval '30 minutes')`);
-    await sendEmail(u.email,u.name,'Atur ulang kata sandi',`Buka tautan Tani Desa berikut dalam 30 menit:\n${appOrigin}/reset-password#token=${token}\nAbaikan jika Anda tidak memintanya.`);
+    await sendEmail(u.email,u.name,'Atur ulang kata sandi',`Buka tautan Kelompok Tani Podokoyo berikut dalam 30 menit:\n${appOrigin}/reset-password#token=${token}\nAbaikan jika Anda tidak memintanya.`);
    });
    await db.all(sql`UPDATE password_reset_requests SET status='SENT',updated_at=now(),last_error=NULL WHERE id=${job.id}`);processed++;
   }catch{
@@ -94,7 +94,7 @@ export async function resetPassword(db:Db,token:string,password:string,ip:string
 }
 async function securityNotice(u:Row){
  if(!integrationStatus().email)return 'NOT_CONFIGURED';
- try{await sendEmail(u.email,u.name,'Kata sandi akun berubah','Kata sandi akun Tani Desa Anda baru saja diperbarui. Jika Anda tidak melakukan perubahan ini, segera hubungi Owner dan atur ulang kata sandi.');return 'ACCEPTED_BY_PROVIDER';}catch{return 'FAILED';}
+ try{await sendEmail(u.email,u.name,'Kata sandi akun berubah','Kata sandi akun Kelompok Tani Podokoyo Anda baru saja diperbarui. Jika Anda tidak melakukan perubahan ini, segera hubungi pengelola dan atur ulang kata sandi.');return 'ACCEPTED_BY_PROVIDER';}catch{return 'FAILED';}
 }
 export async function changePassword(db:Db,a:Actor,current:string,password:string){
  const u=requireValue((await db.all(sql`SELECT password_hash FROM users WHERE id=${a.id} AND org_id=${a.org_id} AND active`))[0]);
@@ -115,7 +115,7 @@ export async function inviteAdmin(tx:Db,a:Actor,email:string,name:string){
  const token=randomToken();
  await tx.all(sql`UPDATE auth_tokens SET consumed_at=now() WHERE email=${email} AND org_id=${a.org_id} AND kind='INVITE' AND consumed_at IS NULL`);
  const [invitation]=await tx.all(sql`INSERT INTO auth_tokens(org_id,email,name,token_hash,kind,expires_at,created_by) VALUES(${a.org_id},${email},${name},${hash(token)},'INVITE',now()+interval '48 hours',${a.id}) RETURNING id,email,name,expires_at`);
- await sendEmail(email,name,'Undangan Admin Tani Desa',`${a.name} mengundang Anda sebagai Admin. Tentukan kata sandi Anda dalam 48 jam:\n${appOrigin}/accept-invitation#token=${token}\nJika undangan ini tidak dikenal, abaikan email ini.`);
+ await sendEmail(email,name,'Undangan Admin Kelompok Tani Podokoyo',`${a.name} mengundang Anda sebagai Admin. Tentukan kata sandi Anda dalam 48 jam:\n${appOrigin}/accept-invitation#token=${token}\nJika undangan ini tidak dikenal, abaikan email ini.`);
  await audit(tx,a,'ADMIN_INVITED','INVITATION',invitation.id,null,invitation);return {...invitation,delivery:'ACCEPTED_BY_PROVIDER'};
 }
 export async function acceptInvitation(db:Db,token:string,password:string,name:string,ip:string){

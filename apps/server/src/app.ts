@@ -32,7 +32,7 @@ const empty=z.strictObject({});
 const pagination=z.strictObject({limit:z.coerce.number().int().min(1).max(100).default(30),offset:z.coerce.number().int().min(0).max(1000000).default(0)});
 const respond=(res:Response,data:unknown)=>res.json({data});
 const entityId=(req:Request)=>S.id.parse(req.params.id);
-function key(req:Request){const k=req.get('idempotency-key');if(!k)throw new AppError(400,'IDEMPOTENCY_KEY_REQUIRED','Kunci pengiriman tidak tersedia. Muat ulang formulir.');return z.uuid().parse(k);}
+function key(req:Request){const k=req.get('idempotency-key');if(!k)throw new AppError(400,'IDEMPOTENCY_KEY_REQUIRED','Halaman perlu dimuat ulang sebelum menyimpan. Silakan coba lagi.');return z.uuid().parse(k);}
 function write<T extends z.ZodType>(db:Db,operation:string,schema:T,fn:(tx:Db,a:S.Actor,body:z.infer<T>,req:Request)=>Promise<unknown>,permission:'OPERATE'|'MANAGE_USERS'|'SETTINGS'='OPERATE'){
  return async(req:Request,res:Response)=>{const input=schema.parse(req.body??{});const a=req.actor!;respond(res,await mutate(db,a,key(req),operation+':'+String(req.params.id??''),input,tx=>fn(tx,a,input,req),permission));};
 }
@@ -46,7 +46,7 @@ export function createApp(db:Db){
  const api=express.Router();app.use('/api/v1',api);
  api.use((_req,res,next)=>{res.setHeader('Cache-Control','no-store');next();});api.use(auth.originGuard);
  api.get('/health',async(_req,res)=>{try{await db.all(sql`SELECT 1`);respond(res,{status:'ready'});}catch{res.status(503).json({error:{code:'DATABASE_UNAVAILABLE',message:'Database belum siap.'}});}});
- api.get('/public/site',async(_req,res)=>{if(!config.PUBLIC_ORG_SLUG)throw new AppError(503,'PUBLIC_ORG_NOT_CONFIGURED','Profil kelompok belum dikonfigurasi.');respond(res,await content.publicData(db,config.PUBLIC_ORG_SLUG));});
+ api.get('/public/site',async(_req,res)=>{if(!config.PUBLIC_ORG_SLUG)throw new AppError(503,'PUBLIC_ORG_NOT_CONFIGURED','Profil kelompok belum tersedia.');respond(res,await content.publicData(db,config.PUBLIC_ORG_SLUG));});
  api.get('/public/:slug',async(req,res)=>{const slug=z.string().regex(/^[a-z0-9-]{1,100}$/).parse(req.params.slug);respond(res,await content.publicData(db,slug));});
  api.get('/public/:slug/files/:id',async(req,res)=>{const slug=z.string().regex(/^[a-z0-9-]{1,100}$/).parse(req.params.slug);res.redirect(302,await files.publicImage(db,slug,entityId(req)));});
  api.post('/auth/login',async(req,res)=>{const d=S.loginSchema.parse(req.body);const r=await auth.login(db,d.email,d.password,req.ip??'unknown');auth.setSessionCookie(res,r.token);respond(res,{user:r.user,csrf:r.csrf});});
@@ -97,11 +97,12 @@ export function createApp(db:Db){
  api.post('/opnames/:id/cancel',write(db,'OPNAME_CANCEL',S.reasonSchema,(tx,a,d,req)=>opname.cancelOpname(tx,a,entityId(req),d.reason)));
  async function period(req:Request){const org=await orgs.organization(db,req.actor!.org_id),today=orgs.localDate(org.timezone);return z.strictObject({from:S.date.default(today),to:S.date.default(today)}).parse(req.query);}
  api.get('/reports',async(req,res)=>{const p=await period(req);respond(res,await reports.buildReport(db,req.actor!.org_id,p.from,p.to));});
- api.get('/reports/pdf',async(req,res)=>{const p=await period(req);const report=await reports.buildReport(db,req.actor!.org_id,p.from,p.to);const pdf=await reports.reportPdf(report,req.actor!);res.type('application/pdf').setHeader('Content-Disposition',`attachment; filename="laporan-${p.from}-${p.to}.pdf"`);res.send(pdf);});
+ api.get('/reports/pdf',async(req,res)=>{const p=await period(req);const report=await reports.buildReport(db,req.actor!.org_id,p.from,p.to);const pdf=await reports.reportPdf(report,req.actor!);const filename=`laporan-${p.from}-${p.to}.pdf`;if((req.get('accept')??'').includes('application/json'))return respond(res,{filename,content_base64:pdf.toString('base64')});res.type('application/pdf').setHeader('Content-Disposition',`attachment; filename="${filename}"`);res.send(pdf);});
  api.get('/users',async(req,res)=>respond(res,await users.listUsers(db,req.actor!.org_id)));
  api.post('/users/invitations',write(db,'ADMIN_INVITE',S.inviteSchema,(tx,a,d)=>auth.inviteAdmin(tx,a,d.email,d.name),'MANAGE_USERS'));
  api.get('/users/invitations',async(req,res)=>{if(req.actor!.role!=='OWNER')throw new AppError(403,'FORBIDDEN','Hanya Owner dapat melihat undangan.');respond(res,await db.all(sql`SELECT id,name,email,expires_at,consumed_at,created_at FROM auth_tokens WHERE org_id=${req.actor!.org_id} AND kind='INVITE' ORDER BY created_at DESC LIMIT 100`));});
  api.put('/users/:id/active',write(db,'ADMIN_STATUS',z.strictObject({active:z.boolean()}),(tx,a,d,req)=>users.setAdminActive(tx,a,entityId(req),d.active),'MANAGE_USERS'));
+ api.post('/users/:id/transfer-owner',write(db,'OWNER_TRANSFER',S.ownerTransferSchema,(tx,a,d,req)=>users.transferOwner(tx,a,entityId(req),d.current_password),'MANAGE_USERS'));
  api.get('/audit',page(db,audit.listAudit));
  api.get('/notifications',async(req,res)=>respond(res,await notifications.notificationState(db,req.actor!.org_id,req.actor!.id)));
  api.post('/notifications/push',write(db,'PUSH_SUBSCRIBE',S.pushSchema,(tx,a,d)=>notifications.subscribePush(tx,a,d)));
@@ -135,10 +136,10 @@ export function createApp(db:Db){
   else if(e?.code==='23503'){status=422;code='INVALID_REFERENCE';message='Data terkait tidak tersedia dalam organisasi ini.';}
   else if(['23514','22003'].includes(e?.code)){status=409;code='INVALID_QUANTITY';message='Jumlah tidak valid atau stok tidak mencukupi. Muat ulang dan periksa kembali.';}
   else if(['40001','40P01','55P03','57014'].includes(e?.code)){status=409;code='CONCURRENT_CHANGE';message='Data berubah atau sedang digunakan. Muat ulang dan coba lagi.';}
-  else if(['ECONNREFUSED','ENOTFOUND','ETIMEDOUT','57P01'].includes(e?.code)){status=503;code='DATABASE_UNAVAILABLE';message='Database sementara tidak tersedia. Coba lagi nanti.';}
+  else if(['ECONNREFUSED','ENOTFOUND','ETIMEDOUT','57P01'].includes(e?.code)){status=503;code='DATABASE_UNAVAILABLE';message='Layanan sedang tidak tersedia. Coba lagi beberapa saat.';}
   else if(e?.type==='entity.too.large'){status=413;code='REQUEST_TOO_LARGE';message='Ukuran permintaan terlalu besar.';}
   else if(e?.type==='entity.parse.failed'){status=400;code='INVALID_JSON';message='Format permintaan tidak valid.';}
-  console.error(JSON.stringify({event:'request_failed',request_id:res.locals.request_id,status,code}));
+  console.error(error);console.error(JSON.stringify({event:'request_failed',request_id:res.locals.request_id,status,code}));
   res.status(status).json({error:{code,message,...(details?{details}:{}),request_id:res.locals.request_id}});
  });
  return app;

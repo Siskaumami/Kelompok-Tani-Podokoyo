@@ -1,5 +1,5 @@
 import { randomUUID,randomBytes } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { readFile,readdir } from 'node:fs/promises';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import { sql } from 'drizzle-orm';
@@ -8,9 +8,10 @@ import { hash,mutate } from '../apps/server/src/core/transactions.js';
 import { hashPassword } from '../apps/server/src/modules/auth/service.js';
 import { createProduct } from '../apps/server/src/modules/products/service.js';
 import { createProductSchema,type Actor } from '../packages/shared/src/schemas.js';
+import { config } from '../apps/server/src/core/config.js';
 export const fixturePassword='Test-only-password-492!';
 let fixtureHash:Promise<string>|undefined;
-export async function memoryDatabase(){const pg=new PGlite({parsers:{20:(value:string)=>value,1700:(value:string)=>value}});await pg.exec(await readFile('database/migrations/0001_initial.sql','utf8'));const driver=drizzle(pg);return {db:executorDb(driver,fn=>driver.transaction(tx=>fn(tx))),close:()=>pg.close()};}
+export async function memoryDatabase(){config.NODE_ENV='test';config.BREVO_API_KEY='';config.EMAIL_FROM='';config.FILEBASE_ACCESS_KEY_ID='';config.FILEBASE_SECRET_ACCESS_KEY='';config.FILEBASE_BUCKET='';config.VAPID_PUBLIC_KEY='';config.VAPID_PRIVATE_KEY='';config.VAPID_SUBJECT='';const pg=new PGlite({parsers:{20:(value:string)=>value,1700:(value:string)=>value}});for(const name of (await readdir('database/migrations')).filter(v=>v.endsWith('.sql')).sort())await pg.exec(await readFile('database/migrations/'+name,'utf8'));const driver=drizzle(pg);return {db:executorDb(driver,fn=>driver.transaction(tx=>fn(tx))),close:()=>pg.close()};}
 export async function fixture(db:Db){
  fixtureHash??=hashPassword(fixturePassword);const orgId=randomUUID(),ownerId=randomUUID(),adminId=randomUUID();
  await db.all(sql`INSERT INTO organizations(id,name,slug) VALUES(${orgId},'Isolated test organization',${'test-'+orgId})`);

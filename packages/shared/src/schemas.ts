@@ -9,8 +9,8 @@ export const email = z.email().max(254).transform(v=>v.toLowerCase());
 export const password = z.string().min(12,'Kata sandi minimal 12 karakter.').max(128);
 export const publication = z.enum(['DRAFT','PUBLISHED']);
 const marketplace = (hosts:string[]) => z.string().max(2048).refine(v=>{if(!v)return true;try{const u=new URL(v);return u.protocol==='https:'&&!u.username&&!u.password&&hosts.some(h=>u.hostname===h||u.hostname.endsWith('.'+h));}catch{return false;}},'Tautan marketplace harus berupa HTTPS pada domain yang sesuai.').default('');
-export const productSchema = z.strictObject({name:text,sku:z.string().trim().min(1).max(80),description:z.string().trim().max(10000).default(''),image_id:id.nullable().default(null),publication:publication.default('DRAFT'),shopee_url:marketplace(['shopee.co.id','shopee.com','shope.ee']),tokopedia_url:marketplace(['tokopedia.com','tokopedia.link']),whatsapp_url:marketplace(['wa.me','api.whatsapp.com','whatsapp.com'])});
-export const economicsSchema = z.strictObject({material_g:positive,material_rp:integer,packaging_rp:integer,production_rp:integer,other_rp:integer,price_rp:integer,reason:z.string().trim().min(3).max(500)});
+export const productSchema=z.strictObject({name:text,sku:z.string().trim().min(1).max(80),description:z.string().trim().max(10000).default(''),image_id:id.nullable().default(null),publication:publication.default('DRAFT'),shopee_url:marketplace(['shopee.co.id','shopee.com','shope.ee','shp.ee']),tokopedia_url:marketplace(['tokopedia.com','tokopedia.link']),whatsapp_url:marketplace(['wa.me','api.whatsapp.com','whatsapp.com'])});
+export const economicsSchema=z.strictObject({material_g:positive,material_rp:integer,packaging_rp:integer,production_rp:integer,other_rp:integer,price_rp:integer,reason:z.string().trim().max(500).default('')});
 export const createProductSchema=productSchema.extend({economics:economicsSchema});
 export const farmerSchema=z.strictObject({name:text,bio:z.string().trim().max(5000).default(''),image_id:id.nullable().default(null),publication:publication.default('DRAFT')});
 export const contentSchema=z.strictObject({village_title:z.string().trim().max(200),village_body:z.string().trim().max(15000),village_image_id:id.nullable().default(null),publication}).refine(v=>v.publication!=='PUBLISHED'||(v.village_title.length>0&&v.village_body.length>0),'Isi judul dan profil sebelum diterbitkan.');
@@ -20,7 +20,7 @@ export const productionSchema=z.strictObject({product_id:id,plan_id:id.nullable(
 export const saleSchema=z.strictObject({business_date:date,channel:z.enum(['OFFLINE','WHATSAPP','SHOPEE','TOKOPEDIA']),external_ref:z.string().trim().max(200).default(''),discount_rp:integer.default('0'),fee_rp:integer.default('0'),notes:note,items:z.array(z.strictObject({item_id:id,quantity:positive,unit_price_rp:integer.optional()})).min(1).max(50)});
 export const reasonSchema=z.strictObject({reason:z.string().trim().min(3).max(1000)});
 export const opnameStartSchema=z.strictObject({item_id:id});
-export const opnameCompleteSchema=z.strictObject({physical_quantity:integer,reason:z.enum(['SHRINKAGE_OR_DAMAGE','FAILED_PRODUCTION','PREVIOUS_INPUT_ERROR','UNRECORDED_SALE','UNRECORDED_PRODUCTION','MISSING_GOODS','OTHER']),notes:note}).refine(v=>v.reason!=='OTHER'||v.notes.length>0,'Isi keterangan untuk alasan Lainnya.');
+export const opnameCompleteSchema=z.strictObject({physical_quantity:integer,reason:z.enum(['SHRINKAGE_OR_DAMAGE','FAILED_PRODUCTION','PREVIOUS_INPUT_ERROR','UNRECORDED_SALE','UNRECORDED_PRODUCTION','MISSING_GOODS','OTHER']).nullable().default(null),notes:note}).refine(v=>v.reason!=='OTHER'||v.notes.length>0,'Isi keterangan untuk alasan Lainnya.');
 export const confirmationSchema=z.strictObject({business_date:date,status:z.enum(['COMPLETED','NO_SALES'])});
 export const settingsSchema=z.strictObject({name:text,timezone:z.string().refine(v=>{try{new Intl.DateTimeFormat('id-ID',{timeZone:v});return true;}catch{return false;}},'Zona waktu tidak valid.'),reminder_time:z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),reminders_enabled:z.boolean(),reminder_email:z.boolean(),grade_a_price_rp:integer,grade_a_hpp_rp:integer});
 export const loginSchema=z.strictObject({email,password:z.string().min(1).max(128)});
@@ -29,6 +29,7 @@ export const resetSchema=z.strictObject({token:z.string().regex(/^[a-f0-9]{64}$/
 export const acceptInviteSchema=resetSchema.extend({name:text});
 export const changePasswordSchema=z.strictObject({current_password:z.string().min(1).max(128),password});
 export const inviteSchema=z.strictObject({email,name:text});
+export const ownerTransferSchema=z.strictObject({current_password:z.string().min(1).max(128)});
 export const pushSchema=z.strictObject({endpoint:z.url().max(2048).refine(v=>{const u=new URL(v);return u.protocol==='https:'&&!u.username&&!u.password&&!u.port&&['fcm.googleapis.com','updates.push.services.mozilla.com','web.push.apple.com','notify.windows.com'].some(h=>u.hostname===h||u.hostname.endsWith('.'+h));},'Layanan push tidak didukung.'),keys:z.strictObject({p256dh:z.string().regex(/^[A-Za-z0-9_-]{87,88}$/),auth:z.string().regex(/^[A-Za-z0-9_-]{22,24}$/)})});
 export type Role='SUPER_ADMIN'|'OWNER'|'ADMIN';
 export interface Actor {id:string;org_id:string;name:string;email:string;role:Role;}

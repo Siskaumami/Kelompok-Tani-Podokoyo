@@ -12,7 +12,7 @@
     "start": "node dist/server/index.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint apps packages scripts tests --max-warnings 0",
-    "test": "vitest run",
+    "test": "vitest run --no-file-parallelism",
     "test:postgres": "vitest run tests/postgres.test.ts",
     "db:migrate": "node --import tsx scripts/migrate.ts",
     "bootstrap": "node --import tsx scripts/bootstrap.ts",

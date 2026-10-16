@@ -21,12 +21,16 @@ export async function refreshOpname(tx:Db,a:Actor,id:string){
 export async function completeOpname(tx:Db,a:Actor,id:string,d:z.infer<typeof opnameCompleteSchema>){
  const o=await getOpname(tx,a.org_id,id);assert(o.status==='OPEN','Pemeriksaan stok sudah ditutup.');
  const i=await item(tx,a.org_id,o.item_id);
- assert(String(i.revision)===String(o.baseline_revision),'Stok berubah selama pemeriksaan. Perbarui stok sistem dan hitung ulang sebelum menyimpan.','STALE_BASELINE');
+ assert(String(i.revision)===String(o.baseline_revision),'Stok berubah selama pemeriksaan. Gunakan stok terbaru dan hitung ulang sebelum menyimpan.','STALE_BASELINE');
  const difference=BigInt(d.physical_quantity)-BigInt(o.baseline_quantity);
- await move(tx,a,o.item_id,difference,'OPNAME_ADJUSTMENT','OPNAME',id,d.reason+': '+d.notes);
- const [after]=await tx.all(sql`UPDATE stock_opnames SET physical_quantity=${d.physical_quantity},difference=${difference.toString()},reason=${d.reason},notes=${d.notes},status='COMPLETED',completed_by=${a.id},completed_at=now() WHERE org_id=${a.org_id} AND id=${id} RETURNING *`);
- const plans_needing_review=await reconcilePlans(tx,a,'Hasil stock opname mengubah stok fisik.');
- await audit(tx,a,'OPNAME_COMPLETED','OPNAME',id,o,after,d.reason+': '+d.notes);return {...after,plans_needing_review};
+ const reason=d.reason??null;
+ assert(difference===0n?reason===null:reason!==null,difference===0n?'Alasan selisih tidak boleh diisi jika stok fisik sesuai.':'Pilih alasan selisih sebelum menyimpan.');
+ const explanation=difference===0n?'Stok fisik sesuai dengan stok tercatat.':reason+(d.notes?': '+d.notes:'');
+ await move(tx,a,o.item_id,difference,'OPNAME_ADJUSTMENT','OPNAME',id,explanation);
+ const [after]=await tx.all(sql`UPDATE stock_opnames SET physical_quantity=${d.physical_quantity},difference=${difference.toString()},reason=${reason},notes=${d.notes},status='COMPLETED',completed_by=${a.id},completed_at=now() WHERE org_id=${a.org_id} AND id=${id} RETURNING *`);
+ const plans_needing_review=await reconcilePlans(tx,a,'Hasil cek stok mengubah stok fisik.');
+ await audit(tx,a,'OPNAME_COMPLETED','OPNAME',id,o,after,explanation);
+ return {...after,plans_needing_review};
 }
 export async function cancelOpname(tx:Db,a:Actor,id:string,reason:string){
  const o=await getOpname(tx,a.org_id,id);assert(o.status==='OPEN','Pemeriksaan stok sudah ditutup.');

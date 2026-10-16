@@ -16,7 +16,7 @@ export async function notificationState(db:Db,orgId:string,userId:string){
  return {business_date:day,timezone:org.timezone,confirmation,reminder_due,reminder_time:String(org.reminder_time).slice(0,5),push_configured:integrationStatus().push,vapid_public_key:integrationStatus().push?config.VAPID_PUBLIC_KEY:null,push_subscribed:s.total!=='0'};
 }
 export async function subscribePush(tx:Db,a:Actor,d:z.infer<typeof pushSchema>){
- if(!integrationStatus().push)throw new AppError(503,'PUSH_NOT_CONFIGURED','Notifikasi push belum dikonfigurasi.');
+ if(!integrationStatus().push)throw new AppError(503,'PUSH_NOT_CONFIGURED','Notifikasi perangkat belum tersedia.');
  const [p]=await tx.all(sql`INSERT INTO push_subscriptions(org_id,user_id,endpoint,p256dh,auth) VALUES(${a.org_id},${a.id},${d.endpoint},${d.keys.p256dh},${d.keys.auth}) ON CONFLICT(endpoint) DO UPDATE SET org_id=excluded.org_id,user_id=excluded.user_id,p256dh=excluded.p256dh,auth=excluded.auth RETURNING id`);
  await audit(tx,a,'PUSH_SUBSCRIBED','USER',a.id,null,{subscription_id:p.id});return {subscribed:true};
 }

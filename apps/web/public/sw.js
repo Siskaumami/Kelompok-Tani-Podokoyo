@@ -11,6 +11,6 @@ self.addEventListener('fetch',event=>{
 });
 self.addEventListener('push',event=>{
  let payload={};try{payload=event.data?event.data.json():{};}catch{payload={};}
- event.waitUntil(self.registration.showNotification('Tani Desa · Pengingat penjualan',{body:typeof payload.body==='string'?payload.body:'Konfirmasikan pencatatan penjualan hari ini.',icon:'/icon-192.png',badge:'/icon-192.png',tag:'sales-reminder',data:{url:'/dashboard/sales'}}));
+ event.waitUntil(self.registration.showNotification('Kelompok Tani Podokoyo · Pengingat penjualan',{body:typeof payload.body==='string'?payload.body:'Konfirmasikan pencatatan penjualan hari ini.',icon:'/icon-192.png',badge:'/icon-192.png',tag:'sales-reminder',data:{url:'/dashboard/sales'}}));
 });
 self.addEventListener('notificationclick',event=>{event.notification.close();event.waitUntil(self.clients.matchAll({type:'window',includeUncontrolled:true}).then(async clients=>{const client=clients.find(c=>new URL(c.url).origin===self.location.origin);if(client){await client.navigate('/dashboard/sales');return client.focus();}return self.clients.openWindow('/dashboard/sales');}));});

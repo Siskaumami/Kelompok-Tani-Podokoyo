@@ -1,7 +1,7 @@
 import { config,integrationStatus } from '../../core/config.js';
 import { AppError } from '../../core/errors.js';
 import { email } from '../../../../../packages/shared/src/schemas.js';
-export function requireEmail(){if(!integrationStatus().email)throw new AppError(503,'EMAIL_NOT_CONFIGURED','Pengiriman email belum dikonfigurasi. Hubungi pengelola sistem.');email.parse(config.EMAIL_FROM);}
+export function requireEmail(){if(!integrationStatus().email)throw new AppError(503,'EMAIL_NOT_CONFIGURED','Pengiriman email belum tersedia. Hubungi pengelola.');email.parse(config.EMAIL_FROM);}
 export async function sendEmail(to:string,name:string,subject:string,text:string){
  requireEmail();
  try{

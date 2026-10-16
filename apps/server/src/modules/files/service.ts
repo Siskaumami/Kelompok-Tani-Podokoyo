@@ -10,7 +10,7 @@ import { AppError,requireValue } from '../../core/errors.js';
 import { audit } from '../../core/transactions.js';
 import type { Actor } from '../../../../../packages/shared/src/schemas.js';
 
-function client(){if(!integrationStatus().storage)throw new AppError(503,'STORAGE_NOT_CONFIGURED','Penyimpanan gambar belum dikonfigurasi.');return new S3Client({region:'auto',endpoint:'https://s3.filebase.io',credentials:{accessKeyId:config.FILEBASE_ACCESS_KEY_ID,secretAccessKey:config.FILEBASE_SECRET_ACCESS_KEY},requestHandler:{requestTimeout:10000,connectionTimeout:5000}});}
+function client(){if(!integrationStatus().storage)throw new AppError(503,'STORAGE_NOT_CONFIGURED','Fitur unggah gambar belum tersedia.');return new S3Client({region:'auto',endpoint:'https://s3.filebase.io',credentials:{accessKeyId:config.FILEBASE_ACCESS_KEY_ID,secretAccessKey:config.FILEBASE_SECRET_ACCESS_KEY},requestHandler:{requestTimeout:10000,connectionTimeout:5000}});}
 
 export async function prepareImage(buffer:Buffer){if(buffer.length>5*1024*1024)throw new AppError(413,'FILE_TOO_LARGE','Ukuran gambar maksimal 5 MB.');const type=await fileTypeFromBuffer(buffer);if(!type||!['image/jpeg','image/png','image/webp'].includes(type.mime))throw new AppError(422,'FILE_TYPE','Gunakan gambar JPEG, PNG atau WebP.');try{return await sharp(buffer,{limitInputPixels:25_000_000,animated:false}).rotate().resize({width:1800,height:1800,fit:'inside',withoutEnlargement:true}).webp({quality:85}).toBuffer();}catch{throw new AppError(422,'INVALID_IMAGE','Gambar tidak dapat dibaca atau ukurannya terlalu besar.');}}
 
