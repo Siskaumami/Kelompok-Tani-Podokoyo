@@ -2,6 +2,8 @@
 
 Review date: 2026-10-16 (Asia/Jakarta). Scope: application/source/database constraints, request-level tests and dependency audit. This is a project implementation review; real provider/browser/deployment configuration has a separate acceptance boundary.
 
+> Current-state addendum (2026-10-19): this security review is a historical 2026-10-16 snapshot. The repository later added the Flutter mobile client and migrated object storage from Cloudflare R2 to Filebase. R2-specific wording below describes the reviewed snapshot and must not be read as current provider configuration. Current release acceptance must verify Filebase, mobile secure storage/transport, device behavior, and store signing separately.
+
 | Area | Controls and review outcome |
 | --- | --- |
 | Passwords / login | Argon2id 64 MiB, three passes, 12–128 new-password policy; unknown-user dummy verification; durable IP/email throttles. Real Argon2 login/logout/reset paths tested. |

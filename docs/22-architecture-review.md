@@ -2,6 +2,8 @@
 
 Review date: 2026-10-16 (Asia/Jakarta). Scope: final source, migration, automated domain/HTTP tests, native PostgreSQL pool contention, compiled application/admin-tool smoke and PDF rendering. No runtime demo setup is required.
 
+> Current-state addendum (2026-10-19): this review predates the current Flutter client and the storage migration from Cloudflare R2 to Filebase. The original findings below are retained as historical review evidence. `apps/mobile` now implements the native client against the same `/api/v1` backend; Filebase is the current S3-compatible object-storage provider. Re-run provider/device-specific acceptance before release rather than treating this 2026-10-16 review as proof of current mobile/store readiness.
+
 ## System-wide acceptance findings
 
 | Question | Result and evidence |

@@ -12,4 +12,4 @@ The delivered codebase must need no mock cleanup before real use.
 
 ## Consequences and change conditions
 
-Fixtures remain isolated under tests; no development shortcut can pretend Brevo/R2/push accepted work.
+Fixtures remain isolated under tests; no development shortcut can pretend Brevo/Filebase/push accepted work.

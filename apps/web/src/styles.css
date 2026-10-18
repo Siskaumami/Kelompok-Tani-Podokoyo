@@ -787,11 +787,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   padding: 50px 12%;
 }
 
-.back-link {
-  font-size: 12px;
-  color: #54755e;
-}
-
 .auth-content {
   margin: auto 0;
   padding: 70px 0;
@@ -1285,23 +1280,68 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 
 .row-actions {
   display: flex;
-  gap: 4px 12px;
+  gap: 8px;
   flex-wrap: wrap;
   align-items: center;
 }
 
 .row-button {
-  background: transparent;
-  min-height: 35px;
+  background: #fff;
+  min-height: 38px;
   color: #19743a;
+  border: 1px solid #bdd8c4;
+  border-radius: 8px;
   font-size: 10px;
-  font-weight: 600;
-  padding: 6px 0;
-  text-align: left;
+  font-weight: 650;
+  padding: 7px 11px;
+  text-align: center;
+  line-height: 1.25;
 }
 
 .row-button:hover {
-  text-decoration: underline;
+  background: #f2faf4;
+  border-color: #8fbea0;
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 8px;
+  width: 100%;
+  max-width: 220px;
+}
+
+.action-grid .row-button {
+  width: 100%;
+}
+
+.row-actions:has(> .row-button + .row-button) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+  max-width: none;
+}
+
+.row-actions:has(> .row-button + .row-button) .row-button {
+  width: 100%;
+}
+
+.action-note {
+  display: grid;
+  gap: 2px;
+  color: #19743a;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.action-note strong {
+  font-weight: 700;
+}
+
+.action-note small {
+  color: var(--muted);
+  font-weight: 400;
 }
 
 .clamp {
@@ -2033,6 +2073,9 @@ fieldset {
     height: 73px;
     padding: 0 25px;
     justify-content: flex-start;
+    position: sticky;
+    top: 0;
+    z-index: 60;
   }
 
   .workspace-main {
@@ -2129,6 +2172,25 @@ fieldset {
   .public-main {
     padding: 0 20px 50px;
   }
+
+.grade-a-economics {
+  align-items: stretch;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+}
+
+.grade-a-economics > div:first-child {
+  min-width: 0;
+}
+
+.grade-a-values {
+  width: 100%;
+}
+
+.grade-a-economics > .button {
+  width: 100%;
+}
 
   .hero {
     grid-template-columns: 1fr;
@@ -2445,7 +2507,7 @@ fieldset {
   .record {
     display: flex !important;
     flex-wrap: wrap;
-    gap: 14px 18px;
+    gap: 8px 18px;
     padding: 20px;
     background: white;
     border: 1px solid #dfeae2 !important;
@@ -2465,7 +2527,7 @@ fieldset {
   .record-cell:last-child {
     flex-basis: 100%;
     border-top: 1px solid #edf2ee;
-    padding-top: 9px;
+    padding-top: 8px;
   }
 
   .record-cell strong {
@@ -2485,7 +2547,7 @@ fieldset {
   }
 
   .row-actions {
-    gap: 8px 19px;
+    gap: 8px;
   }
 
   .row-button {
@@ -2705,6 +2767,57 @@ fieldset {
     font-size: 13px;
   }
 
+  .grade-a-economics {
+  margin-bottom: 20px;
+  padding: 22px 24px;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.grade-a-economics > div:first-child {
+  min-width: 230px;
+}
+
+.grade-a-economics h2 {
+  font-size: 19px;
+  margin-bottom: 5px;
+}
+
+.grade-a-economics .eyebrow {
+  margin-bottom: 8px;
+}
+
+.grade-a-economics p {
+  margin: 0;
+}
+
+.grade-a-values {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(130px,1fr));
+  gap: 12px;
+  flex: 1;
+}
+
+.grade-a-values > div {
+  border: 1px solid #e0ebe3;
+  border-radius: 9px;
+  background: #f8fbf9;
+  padding: 13px 15px;
+}
+
+.grade-a-values span {
+  display: block;
+  color: #748c7c;
+  font-size: 10px;
+  margin-bottom: 5px;
+}
+
+.grade-a-values strong {
+  font-size: 16px;
+  font-weight: 650;
+}
+
   .data-view > div {
     font-size: 12px;
     grid-template-columns: 1fr 1.4fr;
@@ -2841,7 +2954,7 @@ fieldset {
 
 .dashboard .row-button {
   font-size: 12px;
-  min-height: 44px;
+  min-height: 38px;
 }
 
 .dashboard .page-title p {
@@ -2875,5 +2988,87 @@ fieldset {
 
   .dashboard .record-cell {
     font-size: 13px;
+  }
+}
+
+.grade-a-economics {
+  display: grid;
+  grid-template-columns: minmax(260px,1fr) minmax(320px,1fr) auto;
+  align-items: center;
+  gap: 24px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.grade-a-economics > div:first-child {
+  min-width: 0;
+}
+
+.grade-a-economics .eyebrow {
+  margin-bottom: 8px;
+}
+
+.grade-a-economics h2 {
+  margin: 0 0 6px;
+  font-size: 20px;
+}
+
+.grade-a-economics p {
+  margin: 0;
+}
+
+.grade-a-values {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 12px;
+  min-width: 0;
+}
+
+.grade-a-values > div {
+  display: grid;
+  gap: 5px;
+  padding: 13px 15px;
+  background: #f8fbf9;
+  border: 1px solid #dfeae2;
+  border-radius: 9px;
+}
+
+.grade-a-values span {
+  display: block;
+  color: #748c7c;
+  font-size: 10px;
+}
+
+.grade-a-values strong {
+  display: block;
+  color: #173b27;
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.grade-a-economics > .button {
+  justify-self: end;
+  white-space: nowrap;
+}
+
+@media (max-width:900px) {
+  .grade-a-economics {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .grade-a-economics > .button {
+    justify-self: start;
+  }
+}
+
+@media (max-width:640px) {
+  .grade-a-values {
+    grid-template-columns: 1fr;
+  }
+
+  .grade-a-economics > .button {
+    width: 100%;
   }
 }

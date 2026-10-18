@@ -6,7 +6,7 @@ Product DTO fields are exactly ID, name, description, imageUrl, sellingPrice, sh
 
 `/public/site` selects PUBLIC_ORG_SLUG for the installation. `/public/:slug` allows intentionally published organizations by known slug. A slug is not a private API token. Multi-organization private access still derives org_id from the user session, never that public slug.
 
-Public image access checks whether the file is attached to currently published content in the same organization before signing R2 access. Knowing a draft image ID does not make it public. Private image access checks the session organization. The private R2 bucket must not have an alternate unrestricted public URL; publication checks would be meaningless otherwise. A signed URL already issued may remain valid for five minutes.
+Public image access checks whether the file is attached to currently published content in the same organization before signing Filebase access. Knowing a draft image ID does not make it public. Private image access checks the session organization. The private Filebase bucket must not have an alternate unrestricted public URL; publication checks would be meaningless otherwise. A signed URL already issued may remain valid for five minutes.
 
 Empty public collections are normal responses. Missing site configuration is a clear 503, not a made-up village or fabricated catalogue. No business records are hardcoded in React. Static app branding and nonrecord illustrative graphics are not operational data.
 

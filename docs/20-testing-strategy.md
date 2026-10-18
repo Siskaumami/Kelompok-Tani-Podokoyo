@@ -24,4 +24,4 @@ Without TEST_DATABASE_URL, native tests are explicitly skipped; that is not a cl
 
 `npm run typecheck`, `npm run lint`, `npm run api:generate`, `npm run build`, `npm audit`, and read-only ledger verification are available. The build includes compiled administrative tools so the production runtime need not retain dev dependencies for migration/provisioning.
 
-No provider success is fabricated in tests that are presented as live integration verification. Real Brevo, R2 and Web Push acceptance is not claimed without credentials. Browser responsive/accessibility/install/push smoke checks must run in a supported browser in the deployment environment; source/CSS and HTTP tests are not equivalent to a visual browser pass. See the review and QA checklist.
+No provider success is fabricated in tests that are presented as live integration verification. Real Brevo, Filebase and Web Push acceptance is not claimed without credentials. Browser responsive/accessibility/install/push smoke checks must run in a supported browser in the deployment environment; source/CSS and HTTP tests are not equivalent to a visual browser pass. See the review and QA checklist.

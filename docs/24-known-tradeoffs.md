@@ -1,18 +1,18 @@
 # Known trade-offs and intentional limitations
 
 * **Organization serialization:** one row lock per group's mutation favors simple correctness over maximum write throughput. Per-item locking can be considered only with cross-domain lock-order and planning/report implications tested.
-* **Single-organization users:** no tenant switcher, shared memberships or Owner transfer UI. Platform provisioning is a deliberate CLI. Email is globally unique.
+* **Single-organization users:** no tenant switcher or shared memberships. Owner transfer UI is implemented for transferring ownership to an active Admin in the same organization. Platform provisioning remains a deliberate CLI. Email is globally unique.
 * **Simplified HPP:** sale cost uses current economics at entry and captures it forever; production batch cost is also preserved. FIFO/weighted-average inventory costing, automatic past-date HPP reconstruction and actual batch cost absorption are not implemented.
 * **Operational bookkeeping:** no full double-entry ledger, locked fiscal close, tax calculation, marketplace settlement, receivables, partial returns or cash-flow system. A void restates original-date reporting. Full cancellation assumes full stock return.
 * **Physical loss:** completed production requires positive output. Zero-output total failures and unexplained shrinkage use explicit count adjustments with notes. Stock adjustments are not automatically valued as financial losses. Unrecorded-sale reasons do not fabricate missing revenue; avoid double reductions when subsequently entering the real sale.
 * **Correction workflow:** void then record a replacement are separate deliberate actions. Some reversals fail if downstream stock is no longer available. No direct historical edits or forced negative inventory workaround exists.
 * **Planning review:** physical stock changes that invalidate capacity mark all remaining open plans NEEDS_REVIEW. This is explicit/audited rather than arbitrarily selecting winners.
-* **Images:** one primary image per product/farmer/profile. Private R2, five-minute signed access. Already-signed access can outlive unpublication briefly. Unreferenced uploads may need retention cleanup. No public bucket bypass is supported.
+* **Images:** one primary image per product/farmer/profile. Private Filebase S3-compatible storage, five-minute signed access. Already-signed access can outlive unpublication briefly. Unreferenced uploads may need retention cleanup. No public bucket bypass is supported.
 * **External delivery:** provider acceptance is not inbox/device receipt. A crash between provider acceptance and database commit can produce bounded notification duplicates. No exactly-once external email/push promise exists. Password reset queue requires a running worker/cron.
 * **Push devices:** one registered endpoint per user/day is selected for delivery; account unsubscribe removes all endpoints. Multi-device delivery would need per-subscription tracking.
 * **Lists and exports:** masters are unpaginated for village scale. Financial queries/exports have explicit safe-size limits; split overly large periods. Pagination uses stable ordering but concurrent insertions can shift offset pages; refresh for a consistent latest list.
 * **PWA:** installable and static/offline-notice caching only. Operational data requires internet. No critical queue/retry persists across navigation; inspect server records after an uncertain save.
 * **PDF typography:** PDFKit built-in Helvetica handles normal Indonesian Latin text. Fonts for arbitrary global writing systems are not bundled. Long text wraps with page-height checks.
-* **Deployment checks:** source, automated HTTP/domain/native PostgreSQL tests, dependency audit and builds can be checked here. Actual Brevo/R2/push credentials and a supported browser for visual/install QA are not supplied. Those are explicit deployment acceptance steps, not mocked completed checks.
+* **Deployment checks:** source, automated HTTP/domain/native PostgreSQL tests, dependency audit and builds can be checked here. Actual Brevo/Filebase/push credentials and a supported browser for visual/install QA are not supplied. Those are explicit deployment acceptance steps, not mocked completed checks.
 
 These are scope choices, not instructions to remove temporary code. No demo cleanup is required.

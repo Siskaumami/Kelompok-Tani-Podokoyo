@@ -2,6 +2,8 @@
 
 Verified for this packaged source/build on 2026-10-16:
 
+> Current-state addendum (2026-10-19): this record describes the packaged source verified on 2026-10-16. Since then the repository added/iterated the Flutter mobile client, changed object storage to Filebase, and changed web/mobile UI. Keep the original record as historical evidence, but do not treat its R2/browser-only statements as verification of the current tree. Run the current web/backend and Flutter checks again before release.
+
 * Node.js 24.19.0, TypeScript 5.9, Vite 7.3, Vitest 5.0.5, native PostgreSQL 18.4 and PostgreSQL WASM/PGlite test engine.
 * `npm run typecheck`: passed.
 * `npm run lint`: passed, max warnings zero.
