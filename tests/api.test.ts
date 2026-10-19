@@ -59,6 +59,158 @@ describe('authentication transport and one-time invitations',()=>{
   const body={token,name:'Test invitee',password:'Invitation-test-password-449!'};const first=await client().post('/api/v1/auth/accept-invitation').set('Origin','http://localhost:5173').send(body);expect(first.status).toBe(200);
   const [u]=await db.all(sql`SELECT role FROM users WHERE email=${email}`);expect(u.role).toBe('ADMIN');expect((await client().post('/api/v1/auth/accept-invitation').set('Origin','http://localhost:5173').send(body)).status).toBe(404);
  });
+ it('lets an Admin delete their own account but requires an Owner transfer first',async()=>{
+  const ownerDenied=await client()
+   .post('/api/v1/auth/delete-account')
+   .set(headers())
+   .send({current_password:fixturePassword});
+
+  expect(ownerDenied.status).toBe(409);
+  expect(ownerDenied.body.error.code).toBe('OWNER_TRANSFER_REQUIRED');
+
+  const [ownerAfter]=await db.all(
+   sql`SELECT active,email
+       FROM users
+       WHERE id=${f.owner.id}`
+  );
+
+  expect(ownerAfter.active).toBe(true);
+  expect(ownerAfter.email).toBe(f.owner.email);
+
+  const otherOrgId=randomUUID();
+  const ownAuthToken=randomBytes(32).toString('hex');
+  const otherAuthToken=randomBytes(32).toString('hex');
+
+  await db.all(
+   sql`INSERT INTO organizations(id,name,slug)
+       VALUES(
+        ${otherOrgId},
+        'Other test organization',
+        ${'other-'+otherOrgId}
+       )`
+  );
+
+  await db.all(
+   sql`INSERT INTO auth_tokens(
+        org_id,
+        email,
+        token_hash,
+        kind,
+        expires_at
+       )
+       VALUES
+        (
+         ${f.orgId},
+         ${f.admin.email},
+         ${hash(ownAuthToken)},
+         'RESET',
+         now()+interval '1 hour'
+        ),
+        (
+         ${otherOrgId},
+         ${f.admin.email},
+         ${hash(otherAuthToken)},
+         'INVITE',
+         now()+interval '1 hour'
+        )`
+  );
+
+  const token=randomBytes(32).toString('hex');
+  const csrf=hash('csrf:'+token);
+
+  await db.all(
+   sql`INSERT INTO sessions(
+        token_hash,
+        user_id,
+        csrf_hash,
+        expires_at
+       )
+       VALUES(
+        ${hash(token)},
+        ${f.admin.id},
+        ${hash(csrf)},
+        now()+interval '1 hour'
+       )`
+  );
+
+  const adminHeaders={
+   Origin:'http://localhost:5173',
+   Cookie:'tani_session='+token,
+   'X-CSRF-Token':csrf
+  };
+
+  const deleted=await client()
+   .post('/api/v1/auth/delete-account')
+   .set(adminHeaders)
+   .send({current_password:fixturePassword});
+
+  expect(deleted.status).toBe(200);
+  expect(deleted.body.data.deleted).toBe(true);
+
+  const [adminAfter]=await db.all(
+   sql`SELECT name,email,active,role
+       FROM users
+       WHERE id=${f.admin.id}`
+  );
+
+  expect(adminAfter.name).toBe('Akun dihapus');
+  expect(adminAfter.email).toBe(
+   `deleted-${f.admin.id}@deleted.invalid`
+  );
+  expect(adminAfter.active).toBe(false);
+  expect(adminAfter.role).toBe('ADMIN');
+
+  const sessions=await db.all(
+   sql`SELECT token_hash
+       FROM sessions
+       WHERE user_id=${f.admin.id}`
+  );
+
+  expect(sessions).toHaveLength(0);
+
+  const auditRows=await db.all(
+   sql`SELECT action
+       FROM audit_logs
+       WHERE actor_id=${f.admin.id}
+         AND action='ACCOUNT_DELETED'`
+  );
+
+  expect(auditRows).toHaveLength(1);
+
+  const ownOrgTokens=await db.all(
+   sql`SELECT id
+       FROM auth_tokens
+       WHERE org_id=${f.orgId}
+         AND email=${f.admin.email}`
+  );
+
+  expect(ownOrgTokens).toHaveLength(0);
+
+  const otherOrgTokens=await db.all(
+   sql`SELECT id
+       FROM auth_tokens
+       WHERE org_id=${otherOrgId}
+         AND email=${f.admin.email}`
+  );
+
+  expect(otherOrgTokens).toHaveLength(1);
+
+  const oldSession=await client()
+   .get('/api/v1/auth/me')
+   .set('Cookie','tani_session='+token);
+
+  expect(oldSession.status).toBe(401);
+
+  const oldLogin=await client()
+   .post('/api/v1/auth/login')
+   .set('Origin','http://localhost:5173')
+   .send({
+    email:f.admin.email,
+    password:fixturePassword
+   });
+
+  expect(oldLogin.status).toBe(401);
+ });
  it('makes an accurate empty report and PDF available from an empty business installation',async()=>{
   const report=await client().get('/api/v1/reports?from=2026-10-15&to=2026-10-15').set(headers());expect(report.status).toBe(200);expect(report.body.data.totals.gross_rp).toBe('0');expect(report.body.data.transactions).toEqual([]);
   const pdf=await client().get('/api/v1/reports/pdf?from=2026-10-15&to=2026-10-15').set(headers());expect(pdf.status).toBe(200);expect(pdf.headers['content-type']).toContain('application/pdf');expect(pdf.body.subarray(0,4).toString()).toBe('%PDF');

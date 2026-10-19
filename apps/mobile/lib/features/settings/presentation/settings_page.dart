@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/auth_controller.dart';
 import '../../../core/data/feature_provider.dart';
+import '../../../core/network/external_links.dart';
 import '../../../core/widgets/common.dart';
 import '../../../core/widgets/forms/form_spec.dart';
 import '../../../core/widgets/forms/mutation_dialog.dart';
@@ -176,6 +177,42 @@ class SettingsPage extends ConsumerWidget {
                                   ),
                                   child: const Text('Ganti kata sandi'),
                                 ),
+                                const SizedBox(height: 12),
+                                OutlinedButton(
+                                  onPressed: () =>
+                                      ref.read(externalLinksProvider).privacy(),
+                                  child: const Text('Kebijakan Privasi'),
+                                ),
+                                const SizedBox(height: 12),
+                                if (user?.isOwner ?? false)
+                                  const Notice(
+                                    'Untuk menghapus akun Pengelola Utama, pindahkan peran Pengelola Utama ke Admin lain terlebih dahulu.',
+                                  )
+                                else
+                                  OutlinedButton(
+                                    onPressed: () => showMutationForm(
+                                      context,
+                                      ref,
+                                      const FormSpec(
+                                        title: 'Hapus akun',
+                                        path: '/auth/delete-account',
+                                        authAction: true,
+                                        afterSave: AfterSave.accountDeleted,
+                                        submitLabel: 'Hapus akun',
+                                        description:
+                                            'Akses akun akan dihapus dan data pribadi akun akan dianonimkan. Catatan transaksi dan riwayat aktivitas organisasi tetap disimpan.',
+                                        fields: [
+                                          FieldSpec(
+                                            'current_password',
+                                            'Kata sandi saat ini',
+                                            kind: InputKind.password,
+                                            maxLength: 128,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    child: const Text('Hapus akun'),
+                                  ),
                                 const Divider(),
                                 const Text(
                                   'Pengingat di perangkat',

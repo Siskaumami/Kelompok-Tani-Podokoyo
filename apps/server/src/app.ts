@@ -37,6 +37,28 @@ function write<T extends z.ZodType>(db:Db,operation:string,schema:T,fn:(tx:Db,a:
  return async(req:Request,res:Response)=>{const input=schema.parse(req.body??{});const a=req.actor!;respond(res,await mutate(db,a,key(req),operation+':'+String(req.params.id??''),input,tx=>fn(tx,a,input,req),permission));};
 }
 function page(db:Db,fn:(db:Db,org:string,limit:number,offset:number)=>Promise<S.Row[]>){return async(req:Request,res:Response)=>{const {limit,offset}=pagination.parse(req.query);const rows=await fn(db,req.actor!.org_id,limit+1,offset);respond(res,{items:rows.slice(0,limit),next_offset:rows.length>limit?offset+limit:null});};}
+function deleteAccount(db:Db){
+ return async(req:Request,res:Response)=>{
+  const d=z.strictObject({
+   current_password:z.string().min(1).max(128)
+  }).parse(req.body);
+
+  await auth.throttle(
+   db,
+   'delete:'+req.actor!.id,
+   5
+  );
+
+  const result=await users.deleteOwnAccount(
+   db,
+   req.actor!,
+   d.current_password
+  );
+
+  auth.clearSessionCookie(res);
+  respond(res,result);
+ };
+}
 export function createApp(db:Db){
  const app=express();app.disable('x-powered-by');if(config.TRUST_PROXY_HOPS)app.set('trust proxy',config.TRUST_PROXY_HOPS);
  app.use((req,res,next)=>{res.locals.request_id=randomUUID();res.setHeader('X-Request-Id',res.locals.request_id);next();});
@@ -57,6 +79,7 @@ export function createApp(db:Db){
  api.get('/auth/me',(req,res)=>respond(res,{user:req.actor,csrf:req.csrf}));
  api.post('/auth/logout',async(req,res)=>{empty.parse(req.body);await auth.logout(db,req.session_hash!);auth.clearSessionCookie(res);respond(res,{logged_out:true});});
  api.post('/auth/change-password',async(req,res)=>{const d=S.changePasswordSchema.parse(req.body);await auth.throttle(db,'change:'+req.actor!.id,8);const result=await auth.changePassword(db,req.actor!,d.current_password,d.password);auth.clearSessionCookie(res);respond(res,result);});
+ api.post('/auth/delete-account',deleteAccount(db));
  api.get('/organization',async(req,res)=>respond(res,await orgs.organization(db,req.actor!.org_id)));
  api.get('/configuration',(_req,res)=>respond(res,integrationStatus()));
  api.put('/organization/settings',write(db,'SETTINGS',S.settingsSchema,(tx,a,d)=>orgs.saveSettings(tx,a,d),'SETTINGS'));

@@ -38,7 +38,8 @@ Future<bool> showMutationForm(
   if (!context.mounted) return outcome == FormOutcome.saved;
   final auth = ref.read(authProvider.notifier);
   if (outcome == FormOutcome.saved &&
-      spec.afterSave == AfterSave.passwordChanged) {
+      (spec.afterSave == AfterSave.passwordChanged ||
+          spec.afterSave == AfterSave.accountDeleted)) {
     await auth.forget();
     return true;
   }

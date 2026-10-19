@@ -14,6 +14,12 @@ class ExternalLinks {
       throw const AppError('Website belum dapat dibuka. Coba lagi.');
     }
   }
+  Future<void> privacy() async {
+    final uri = Uri.parse(config.appOrigin).resolve('/privacy');
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      throw const AppError('Kebijakan Privasi belum dapat dibuka. Coba lagi.');
+    }
+  }
 }
 
 final externalLinksProvider = Provider<ExternalLinks>(

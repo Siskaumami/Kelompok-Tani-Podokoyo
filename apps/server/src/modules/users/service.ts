@@ -1,8 +1,9 @@
+import { randomBytes } from 'node:crypto';
 import { sql } from 'drizzle-orm';
 import type { Db } from '../../core/database.js';
 import { assert,requireValue } from '../../core/errors.js';
-import { audit } from '../../core/transactions.js';
-import { verifyPassword } from '../auth/service.js';
+import { audit,hash } from '../../core/transactions.js';
+import { hashPassword,verifyPassword } from '../auth/service.js';
 import type { Actor } from '../../../../../packages/shared/src/schemas.js';
 
 export const listUsers=(db:Db,org:string)=>
@@ -201,4 +202,149 @@ export async function transferOwner(
     owner:newOwner,
     previous_owner:previousOwner
   };
+}
+
+export async function deleteOwnAccount(
+  db:Db,
+  a:Actor,
+  currentPassword:string
+){
+  const current=requireValue(
+    (await db.all(
+      sql`SELECT id,org_id,email,role,active,password_hash
+          FROM users
+          WHERE org_id=${a.org_id}
+            AND id=${a.id}`
+    ))[0]
+  );
+
+  assert(
+    current.active && current.role===a.role,
+    'Akses akun berubah. Masuk kembali lalu coba lagi.',
+    'ACCOUNT_CHANGED'
+  );
+
+  assert(
+    current.role!=='OWNER',
+    'Pindahkan Pengelola Utama ke Admin lain sebelum menghapus akun ini.',
+    'OWNER_TRANSFER_REQUIRED'
+  );
+
+  assert(
+    current.role==='ADMIN',
+    'Akun ini tidak dapat dihapus melalui aplikasi.',
+    'ACCOUNT_DELETION_NOT_ALLOWED'
+  );
+
+  assert(
+    await verifyPassword(
+      current.password_hash,
+      currentPassword
+    ),
+    'Kata sandi saat ini tidak sesuai.',
+    'INVALID_PASSWORD'
+  );
+
+  const deletedPasswordHash=await hashPassword(
+    randomBytes(32).toString('hex')
+  );
+
+  return db.transaction(async tx=>{
+    const latest=requireValue(
+      (await tx.all(
+        sql`SELECT id,org_id,email,role,active,password_hash
+            FROM users
+            WHERE org_id=${a.org_id}
+              AND id=${a.id}
+            FOR UPDATE`
+      ))[0]
+    );
+
+    assert(
+      latest.active &&
+      latest.role===current.role &&
+      latest.password_hash===current.password_hash,
+      'Akses akun berubah. Masuk kembali lalu coba lagi.',
+      'ACCOUNT_CHANGED'
+    );
+
+    await audit(
+      tx,
+      a,
+      'ACCOUNT_DELETED',
+      'USER',
+      a.id,
+      {
+        role:'ADMIN',
+        active:true
+      },
+      {
+        role:'ADMIN',
+        active:false,
+        personal_data:'ANONYMIZED'
+      },
+      'Akun dihapus atas permintaan pemilik akun.'
+    );
+
+    await tx.all(
+      sql`DELETE FROM sessions
+          WHERE user_id=${a.id}`
+    );
+
+    await tx.all(
+      sql`DELETE FROM notification_deliveries
+          WHERE user_id=${a.id}`
+    );
+
+    await tx.all(
+      sql`DELETE FROM push_subscriptions
+          WHERE user_id=${a.id}`
+    );
+
+    await tx.all(
+      sql`DELETE FROM idempotency_keys
+          WHERE actor_id=${a.id}`
+    );
+
+    await tx.all(
+      sql`DELETE FROM auth_tokens
+          WHERE org_id=${a.org_id}
+            AND email=${current.email}`
+    );
+
+    await tx.all(
+      sql`DELETE FROM password_reset_requests
+          WHERE email=${current.email}`
+    );
+
+    await tx.all(
+      sql`DELETE FROM login_limits
+          WHERE key IN (
+            ${hash('login-email:'+current.email)},
+            ${hash('forgot:'+current.email)},
+            ${hash('change:'+a.id)},
+            ${hash('delete:'+a.id)}
+          )`
+    );
+
+    const deletedEmail=`deleted-${a.id}@deleted.invalid`;
+
+    const [deleted]=await tx.all(
+      sql`UPDATE users
+          SET name='Akun dihapus',
+              email=${deletedEmail},
+              password_hash=${deletedPasswordHash},
+              active=false
+          WHERE org_id=${a.org_id}
+            AND id=${a.id}
+          RETURNING id,org_id,role,active`
+    );
+
+    return {
+      deleted:true,
+      user:deleted,
+      message:'Akun berhasil dihapus. Akses dicabut dan data pribadi akun dianonimkan.',
+      retained_data:'Catatan transaksi dan audit organisasi tetap disimpan untuk integritas pembukuan dan keamanan.'
+    };
+  });
 }

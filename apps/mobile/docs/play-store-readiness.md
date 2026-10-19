@@ -31,13 +31,13 @@ Periksa ulang terhadap [petunjuk resmi Data safety Google Play](https://support.
 
 Native share PDF terjadi atas pilihan pengguna. Tentukan bagaimana pengecualian berbagi yang relevan berlaku menurut panduan store, alih-alih mengklaim semua provider bukan penerima data. Enkripsi in transit tersedia pada kode release; keamanan deployment/certificate/domain masih perlu diverifikasi.
 
-Aktivasi undangan membuat akun melalui backend. API tidak memiliki endpoint penghapusan akun/data. Penerbit perlu mengevaluasi [persyaratan penghapusan akun Google Play](https://support.google.com/googleplay/android-developer/answer/13327111), termasuk penerapan pada layanan organisasi/undangan, proses permintaan di dalam/luar aplikasi yang diperlukan, serta data yang harus dipertahankan secara sah. Arsip dan nonaktifkan Admin bukan penghapusan akun. Jangan menyatakan syarat ini sudah dipenuhi oleh klien.
+Aktivasi undangan membuat akun melalui backend. Penghapusan akun sekarang tersedia untuk Admin melalui aplikasi mobile dan halaman web publik `/account-deletion`. Penghapusan memerlukan kata sandi saat ini, mencabut seluruh sesi, membersihkan data autentikasi terkait organisasi, menonaktifkan akun, dan menganonimkan nama serta email akun. Catatan transaksi dan audit organisasi tetap mempertahankan referensi pengguna yang sudah dianonimkan untuk menjaga integritas pembukuan dan keamanan. Pengelola Utama harus memindahkan peran Pengelola Utama ke Admin lain sebelum dapat menghapus akun. Implementasi mengikuti kebutuhan proses penghapusan di dalam dan di luar aplikasi sebagaimana dijelaskan pada [persyaratan penghapusan akun Google Play](https://support.google.com/googleplay/android-developer/answer/13327111).
 
 ## Dependensi dan privacy
 
 Paket langsung dan versi tercantum di README, lockfile disertakan. Riverpod, GoRouter, Dio, secure storage, intl, path_provider, share_plus, image_picker dan url_launcher mempunyai tanggung jawab berbeda; tidak ada Firebase atau SDK iklan/analytics baru. Font Inter dan lisensi OFL disertakan. Branding memakai aset asli proyek.
 
-Penerbit harus menyediakan kebijakan privasi yang dapat diakses, identitas pengelola, kontak bantuan/permintaan data, tujuan pemrosesan, kategori data, penyedia layanan, retensi, penghapusan/penonaktifan serta cara menangani ekspor. Jangan menerbitkan URL kebijakan yang belum tersedia. Untuk iOS, tinjau privacy labels, manifest privacy aplikasi/dependensi dan photo-library usage string pada archive final; manifest yang disertakan tidak mengklaim tracking.
+Kebijakan privasi tersedia pada halaman publik `/privacy` dan dapat dibuka dari aplikasi mobile. Kebijakan menjelaskan kategori data, tujuan pemrosesan, penyedia layanan, keamanan, retensi, serta penghapusan akun/data. Halaman `/account-deletion` menyediakan jalur web untuk memulai penghapusan akun tanpa memerlukan aplikasi Android terpasang. Untuk iOS, tinjau privacy labels, manifest privacy aplikasi/dependensi dan photo-library usage string pada archive final; manifest yang disertakan tidak mengklaim tracking.
 
 ## Checklist rilis manual
 

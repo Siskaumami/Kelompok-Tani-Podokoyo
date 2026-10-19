@@ -112,6 +112,95 @@ void main() {
       await finishTestApp(tester, h);
     },
   );
+
+  testWidgets(
+    'account deletion is blocked for Owner and removes an Admin session after confirmation',
+    (tester) async {
+      final ownerHarness = TestHarness();
+
+      await pumpTestApp(
+        tester,
+        ownerHarness,
+        path: '/dashboard/settings',
+      );
+
+      await tester.ensureVisible(
+        find.text(
+          'Untuk menghapus akun Pengelola Utama, pindahkan peran Pengelola Utama ke Admin lain terlebih dahulu.',
+        ),
+      );
+
+      expect(
+        find.text(
+          'Untuk menghapus akun Pengelola Utama, pindahkan peran Pengelola Utama ke Admin lain terlebih dahulu.',
+        ),
+        findsOneWidget,
+      );
+
+      expect(
+        find.widgetWithText(OutlinedButton, 'Hapus akun'),
+        findsNothing,
+      );
+
+      await finishTestApp(tester, ownerHarness);
+
+      final adminHarness = TestHarness(role: 'ADMIN');
+
+      await pumpTestApp(
+        tester,
+        adminHarness,
+        path: '/dashboard/settings',
+      );
+
+      await tester.ensureVisible(
+        find.widgetWithText(OutlinedButton, 'Hapus akun'),
+      );
+
+      await tester.tap(
+        find.widgetWithText(OutlinedButton, 'Hapus akun'),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Hapus akun'), findsWidgets);
+
+      await enterField(
+        tester,
+        'current_password',
+        'Current-test-password',
+      );
+
+      await tester.tap(
+        find.widgetWithText(ElevatedButton, 'Hapus akun'),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Selamat datang kembali.'),
+        findsOneWidget,
+      );
+
+      expect(adminHarness.store.cookie, isNull);
+
+      final request = adminHarness.server.adapter.requests.singleWhere(
+        (r) =>
+            r.method == 'POST' &&
+            r.uri.path.endsWith('/auth/delete-account'),
+      );
+
+      expect(
+        bodyOf(request),
+        {
+          'current_password': 'Current-test-password',
+        },
+      );
+
+      expect(tester.takeException(), isNull);
+
+      await finishTestApp(tester, adminHarness);
+    },
+  );
   testWidgets(
     'audit detail preserves before/after information and hides identifier/secret fields',
     (tester) async {

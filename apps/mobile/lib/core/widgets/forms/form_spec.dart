@@ -54,7 +54,7 @@ class FieldSpec {
   final bool Function(Map<String, Object?> values)? enabled;
 }
 
-enum AfterSave { refresh, verifySession, passwordChanged }
+enum AfterSave { refresh, verifySession, passwordChanged, accountDeleted }
 
 class FormSpec {
   const FormSpec({
