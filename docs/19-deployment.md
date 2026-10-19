@@ -30,9 +30,11 @@ Create a private Filebase bucket. Configure `FILEBASE_ACCESS_KEY_ID`, `FILEBASE_
 
 A provider success followed by a database failure can leave an unreferenced object if cleanup also fails. The uploader attempts deletion when its local record/audit fails; an outer commit failure may still orphan an object. Periodically compare object keys against file metadata and references before retention cleanup. Never delete files merely because they are unpublished; unpublished files may be used in a draft. Removed image associations do not automatically delete objects.
 
-## Web Push and background work
+## Web Push, native mobile push and background work
 
 Generate VAPID keys using `npx web-push generate-vapid-keys`. Configure public/private key and VAPID_SUBJECT (mailto or HTTPS contact). The public key is intentionally given to authenticated clients; the private key never is. Users explicitly opt in; supported providers are hostname-constrained. Missing configuration does not produce delivery success.
+
+Native Android push uses Firebase Cloud Messaging. Configure `GOOGLE_APPLICATION_CREDENTIALS` on the server to point to a Firebase Admin service-account JSON available only to the runtime. Never commit that service-account file or private key. Flutter Android uses Firebase client configuration (`google-services.json` / generated Firebase options) to identify the Firebase project; those client identifiers are not substitutes for Admin credentials. The authenticated app registers its FID with the backend, and the reminder worker records native sends separately as `MOBILE_PUSH`. Production rollout must apply the mobile-push migrations before the worker is enabled and should verify one real device registration and reminder delivery.
 
 The in-process worker runs every minute when BACKGROUND_WORKER_ENABLED=true. It processes password-reset requests, then sales reminders when REMINDER_WORKER_ENABLED=true. For hosts that suspend processes or multiple job workers, run an external scheduler at least every minute using `npm run jobs:prod`; disable the in-process worker if desired. Database locks/claim states coordinate runners. CLI jobs process both queues; do not schedule only reminders while leaving password reset unprocessed.
 

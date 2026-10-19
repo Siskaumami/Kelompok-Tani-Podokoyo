@@ -1,9 +1,14 @@
+import 'dart:io';
+
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/auth_controller.dart';
+import '../../../app/providers.dart';
 import '../../../core/data/feature_provider.dart';
 import '../../../core/network/external_links.dart';
+import '../../../core/network/mutation.dart';
 import '../../../core/widgets/common.dart';
 import '../../../core/widgets/forms/form_spec.dart';
 import '../../../core/widgets/forms/mutation_dialog.dart';
@@ -199,8 +204,7 @@ class SettingsPage extends ConsumerWidget {
                                         authAction: true,
                                         afterSave: AfterSave.accountDeleted,
                                         submitLabel: 'Hapus akun',
-                                        description:
-                                            'Akses akun akan dihapus dan data pribadi akun akan dianonimkan. Catatan transaksi dan riwayat aktivitas organisasi tetap disimpan.',
+                                        description: 'Akses akun akan dihapus dan data pribadi akun akan dianonimkan. Catatan transaksi dan riwayat aktivitas organisasi tetap disimpan.',
                                         fields: [
                                           FieldSpec(
                                             'current_password',
@@ -231,9 +235,7 @@ class SettingsPage extends ConsumerWidget {
                                   ),
                                 ),
                                 const SizedBox(height: 12),
-                                const Notice(
-                                  'Notifikasi perangkat belum tersedia. Pengingat di aplikasi tetap dapat digunakan.',
-                                ),
+                                const DeviceNotificationControl(),
                               ],
                             ),
                           ),
@@ -246,5 +248,150 @@ class SettingsPage extends ConsumerWidget {
             ),
           ),
         );
+  }
+}
+
+class DeviceNotificationControl extends ConsumerStatefulWidget {
+  const DeviceNotificationControl({super.key});
+
+  @override
+  ConsumerState<DeviceNotificationControl> createState() =>
+      _DeviceNotificationControlState();
+}
+
+class _DeviceNotificationControlState
+    extends ConsumerState<DeviceNotificationControl> {
+  bool _busy = false;
+  bool _enabled = false;
+  String? _message;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final settings = await FirebaseMessaging.instance
+          .getNotificationSettings();
+      final state = await ref.read(apiProvider).get('/notifications');
+
+      final permissionGranted =
+          settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional;
+
+      final registered =
+          state is Map && state['mobile_push_registered'] == true;
+
+      if (!mounted) return;
+
+      setState(() {
+        _enabled = permissionGranted && registered;
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _enabled = false;
+      });
+    }
+  }
+
+  Future<void> _activate() async {
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
+
+    try {
+      final settings = await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
+
+      if (settings.authorizationStatus != AuthorizationStatus.authorized &&
+          settings.authorizationStatus != AuthorizationStatus.provisional) {
+        if (!mounted) return;
+
+        setState(() {
+          _enabled = false;
+          _message = 'Izin notifikasi belum diberikan. Aktifkan izin notifikasi untuk menerima pengingat.';
+        });
+        return;
+      }
+
+      final messaging = FirebaseMessaging.instance;
+      final registration = messaging.onRegistered.first;
+
+      await messaging.register();
+
+      final installationId = await registration;
+
+      if (installationId.isEmpty) {
+        throw StateError('Identitas notifikasi belum tersedia.');
+      }
+
+      await ref
+          .read(apiProvider)
+          .mutate(
+            PendingMutation(
+              path: '/notifications/mobile',
+              method: 'POST',
+              payload: {
+                'fid': installationId,
+                'platform': Platform.isIOS ? 'IOS' : 'ANDROID',
+              },
+            ),
+          );
+
+      if (!mounted) return;
+
+      setState(() {
+        _enabled = true;
+        _message = 'Notifikasi perangkat aktif.';
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _enabled = false;
+        _message = 'Notifikasi perangkat belum dapat diaktifkan. Coba lagi.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        OutlinedButton(
+          onPressed: _busy || _enabled ? null : _activate,
+          child: Text(
+            _busy
+                ? 'Mengaktifkan…'
+                : _enabled
+                ? 'Notifikasi aktif'
+                : 'Aktifkan notifikasi',
+          ),
+        ),
+        if (_message != null) ...[
+          const SizedBox(height: 12),
+          Notice(_message!),
+        ],
+      ],
+    );
   }
 }

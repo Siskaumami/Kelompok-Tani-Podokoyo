@@ -130,6 +130,7 @@ export function createApp(db:Db){
  api.get('/notifications',async(req,res)=>respond(res,await notifications.notificationState(db,req.actor!.org_id,req.actor!.id)));
  api.post('/notifications/push',write(db,'PUSH_SUBSCRIBE',S.pushSchema,(tx,a,d)=>notifications.subscribePush(tx,a,d)));
  api.delete('/notifications/push',write(db,'PUSH_UNSUBSCRIBE',empty,(tx,a)=>notifications.unsubscribePush(tx,a)));
+ api.post('/notifications/mobile',write(db,'MOBILE_PUSH_REGISTER',S.mobilePushSchema,(tx,a,d)=>notifications.registerMobilePush(tx,a,d)));
  const upload=multer({storage:multer.memoryStorage(),limits:{fileSize:5*1024*1024,files:1,fields:0,parts:1}});
  api.post('/files',upload.single('image'),async(req,res)=>{
   if(!req.file)throw new AppError(422,'FILE_REQUIRED','Pilih gambar terlebih dahulu.');

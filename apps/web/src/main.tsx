@@ -5,7 +5,7 @@ import { QueryClientProvider,useQuery } from '@tanstack/react-query';
 import { ArrowUpRight,ArrowRight,Leaf,Package,Users,Menu,X,LayoutDashboard,Wheat,Warehouse,ClipboardCheck,Waypoints,Factory,ShoppingBag,ChartNoAxesCombined,Settings,ScrollText,PanelTop,LogOut,WifiOff,LoaderCircle } from 'lucide-react';
 import { request,queryClient,setCsrf,ApiError } from './api';
 import { Logo,ErrorNotice,Loading,Empty,type Data } from './ui';
-import { money,day } from './format';
+import { money } from './format';
 import { Operations,Overview,SettingsPage,ReportsPage,ContentPage } from './pages';
 import './styles.css';
 const Auth=createContext<Data|null>(null);

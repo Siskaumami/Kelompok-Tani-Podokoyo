@@ -1,6 +1,6 @@
 # REST API contract
 
-Machine-readable OpenAPI 3.1 is `docs/openapi.json`, generated from the shared Zod input schemas using `npm run api:generate`. It documents 62 HTTP operations. Prefix is `/api/v1`. Successful JSON is `{data: ...}`. Errors are `{error:{code,message,details?,request_id?}}`; do not parse localized message text as a machine contract.
+Machine-readable OpenAPI 3.1 is `docs/openapi.json`, generated from the shared Zod input schemas using `npm run api:generate`. It documents 63 HTTP operations. Prefix is `/api/v1`. Successful JSON is `{data: ...}`. Errors are `{error:{code,message,details?,request_id?}}`; do not parse localized message text as a machine contract.
 
 ## Representations and authentication
 
@@ -29,6 +29,8 @@ Login returns public session-user fields and an in-memory CSRF token, with the o
 | Files | GET `/files/{id}` | POST `/files` |
 | Audit | GET `/audit` | No edit/delete API |
 | Health | GET `/health` | None |
+
+Mobile notification registration accepts an authenticated `{fid,platform}` payload at `POST /notifications/mobile`, where platform is `ANDROID` or `IOS`. Notification state reports browser subscription state and mobile registration state independently. `/configuration` also exposes whether native mobile push server credentials are configured.
 
 Each family is implemented in its domain module; HTTP adapters live in `app.ts`. Product metadata updates do not update economics. Creating a product includes nested `economics`. Creating a sale includes 1–50 `items`; line item is item_id, quantity, optional unit_price_rp. Production accepts optional plan_id. An opname completion accepts physical_quantity, structured reason and notes.
 

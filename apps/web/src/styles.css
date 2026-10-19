@@ -1812,7 +1812,15 @@ fieldset {
 .settings-grid {
   display: grid;
   grid-template-columns: repeat(2,minmax(0,1fr));
+  align-items: start;
   gap: 23px;
+}
+
+.setting-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .setting-card {
@@ -1957,6 +1965,11 @@ fieldset {
 
   .reminder-banner .button {
     margin-left: 39px;
+  }
+
+  .settings-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
   }
 
   .stats-grid {
@@ -2765,6 +2778,15 @@ fieldset {
 
   .setting-card > p {
     font-size: 13px;
+  }
+
+  .setting-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .setting-actions .button {
+    width: 100%;
   }
 
   .grade-a-economics {

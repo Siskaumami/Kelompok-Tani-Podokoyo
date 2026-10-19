@@ -31,6 +31,7 @@ export const changePasswordSchema=z.strictObject({current_password:z.string().mi
 export const inviteSchema=z.strictObject({email,name:text});
 export const ownerTransferSchema=z.strictObject({current_password:z.string().min(1).max(128)});
 export const pushSchema=z.strictObject({endpoint:z.url().max(2048).refine(v=>{const u=new URL(v);return u.protocol==='https:'&&!u.username&&!u.password&&!u.port&&['fcm.googleapis.com','updates.push.services.mozilla.com','web.push.apple.com','notify.windows.com'].some(h=>u.hostname===h||u.hostname.endsWith('.'+h));},'Layanan push tidak didukung.'),keys:z.strictObject({p256dh:z.string().regex(/^[A-Za-z0-9_-]{87,88}$/),auth:z.string().regex(/^[A-Za-z0-9_-]{22,24}$/)})});
+export const mobilePushSchema=z.strictObject({fid:z.string().trim().min(10).max(255).regex(/^[A-Za-z0-9_-]+$/),platform:z.enum(['ANDROID','IOS'])});
 export type Role='SUPER_ADMIN'|'OWNER'|'ADMIN';
 export interface Actor {id:string;org_id:string;name:string;email:string;role:Role;}
 export type Row=Record<string,any>; // SQL projection boundary; runtime inputs always go through Zod.

@@ -16,7 +16,7 @@ Flutter mobile client: tersedia di `apps/mobile`.
 Android Flutter: sudah berhasil dijalankan secara lokal pada emulator Android 16 dalam profile mode.
 iOS Flutter project: tersedia, tetapi build/signing iOS tetap memerlukan macOS/Xcode dan belum dianggap tervalidasi hanya dari environment Windows.
 App Links / Universal Links untuk membuka undangan/reset langsung dari email ke aplikasi: belum dikonfigurasi.
-Native push FCM/APNs: belum tersedia; pengingat server/email/web push tetap terpisah dari native push.
+Native push Android (Firebase Cloud Messaging): tersedia dan sudah diuji end-to-end pada emulator Android; iOS/APNs belum divalidasi.
 Offline transactional writes: tidak didukung pada web maupun mobile.
 Database development: PostgreSQL lokal.
 Database production: dirancang untuk Neon PostgreSQL.
@@ -106,7 +106,10 @@ React + TypeScript                Flutter + Dart
                       |       Email invitation / reset / notification
                       |
                       +---- Web Push
-                              VAPID
+                      |       VAPID
+                      |
+                      +---- Firebase Cloud Messaging
+                              Native push Android
 ```
 Frontend web dan mobile tidak berkomunikasi langsung dengan PostgreSQL.
 Semua akses dan business rule utama dilakukan melalui backend. Flutter bukan backend kedua dan tidak menduplikasi authority stok, HPP, laporan, role, atau transaksi.
@@ -153,6 +156,7 @@ Integrasi
 Brevo — email
 Filebase — S3-compatible storage
 Web Push / VAPID — notifikasi browser
+Firebase Cloud Messaging / Firebase Admin SDK — native push Android
 PDFKit — laporan PDF
 ---
 Struktur Project
@@ -197,7 +201,8 @@ Database schema dan migration PostgreSQL.
 Migration tambahan saat ini mencakup antara lain:
 constraint satu Owner per organisasi;
 dukungan transfer Owner;
-consistency rule untuk cek stok fisik.
+consistency rule untuk cek stok fisik;
+registrasi perangkat mobile dan delivery channel native push.
 `packages/shared`
 Schema/contract yang digunakan backend/web. Flutter tetap mengikuti kontrak API yang sama walaupun implementasi modelnya berada di code Dart.
 `tests`
@@ -411,8 +416,9 @@ Transaksi tambahan tetap dapat dicatat.
 Pengingat dapat bekerja melalui:
 in-app reminder;
 Web Push;
+native push Android melalui Firebase Cloud Messaging;
 email jika Brevo dikonfigurasi.
-Native push FCM/APNs belum menjadi bagian backend saat ini.
+Native push Android menggunakan Firebase Installation ID yang diregistrasikan ke backend. iOS/APNs belum divalidasi untuk release.
 ---
 Environment Variables
 Jangan commit credential production ke repository.
@@ -441,6 +447,8 @@ FILEBASE_BUCKET=
 VAPID_PUBLIC_KEY=
 VAPID_PRIVATE_KEY=
 VAPID_SUBJECT=
+
+GOOGLE_APPLICATION_CREDENTIALS=
 
 BACKGROUND_WORKER_ENABLED=
 REMINDER_WORKER_ENABLED=

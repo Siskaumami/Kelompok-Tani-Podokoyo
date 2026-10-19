@@ -10174,6 +10174,190 @@
         }
       }
     },
+    "/notifications/mobile": {
+      "post": {
+        "operationId": "post_notifications_mobile",
+        "tags": [
+          "notifications"
+        ],
+        "security": [
+          {
+            "WebSession": []
+          },
+          {
+            "DevWebSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "description": "Must exactly equal APP_URL origin.",
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success; BIGINT quantities/money are decimal strings.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {}
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "See stable error code and human message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "See stable error code and human message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "See stable error code and human message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "See stable error code and human message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "See stable error code and human message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "See stable error code and human message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "See stable error code and human message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "See stable error code and human message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "See stable error code and human message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "See stable error code and human message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "See stable error code and human message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MobilePush"
+              }
+            }
+          }
+        }
+      }
+    },
     "/files": {
       "post": {
         "operationId": "post_files",
@@ -11042,8 +11226,8 @@
                 "pattern": "^(0|[1-9]\\d{0,12})$"
               },
               "reason": {
+                "default": "",
                 "type": "string",
-                "minLength": 3,
                 "maxLength": 500
               }
             },
@@ -11053,8 +11237,7 @@
               "packaging_rp",
               "production_rp",
               "other_rp",
-              "price_rp",
-              "reason"
+              "price_rp"
             ],
             "additionalProperties": false
           }
@@ -11094,8 +11277,8 @@
             "pattern": "^(0|[1-9]\\d{0,12})$"
           },
           "reason": {
+            "default": "",
             "type": "string",
-            "minLength": 3,
             "maxLength": 500
           }
         },
@@ -11105,8 +11288,7 @@
           "packaging_rp",
           "production_rp",
           "other_rp",
-          "price_rp",
-          "reason"
+          "price_rp"
         ],
         "additionalProperties": false
       },
@@ -11345,15 +11527,23 @@
             "pattern": "^(0|[1-9]\\d{0,12})$"
           },
           "reason": {
-            "type": "string",
-            "enum": [
-              "SHRINKAGE_OR_DAMAGE",
-              "FAILED_PRODUCTION",
-              "PREVIOUS_INPUT_ERROR",
-              "UNRECORDED_SALE",
-              "UNRECORDED_PRODUCTION",
-              "MISSING_GOODS",
-              "OTHER"
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "SHRINKAGE_OR_DAMAGE",
+                  "FAILED_PRODUCTION",
+                  "PREVIOUS_INPUT_ERROR",
+                  "UNRECORDED_SALE",
+                  "UNRECORDED_PRODUCTION",
+                  "MISSING_GOODS",
+                  "OTHER"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "notes": {
@@ -11363,8 +11553,7 @@
           }
         },
         "required": [
-          "physical_quantity",
-          "reason"
+          "physical_quantity"
         ],
         "additionalProperties": false
       },
@@ -11440,6 +11629,29 @@
         "required": [
           "endpoint",
           "keys"
+        ],
+        "additionalProperties": false
+      },
+      "MobilePush": {
+        "type": "object",
+        "properties": {
+          "fid": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 255,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "ANDROID",
+              "IOS"
+            ]
+          }
+        },
+        "required": [
+          "fid",
+          "platform"
         ],
         "additionalProperties": false
       },

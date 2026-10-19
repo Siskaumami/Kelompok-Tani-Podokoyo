@@ -3,7 +3,7 @@ import PDFDocument from 'pdfkit';
 import type { Db } from '../../core/database.js';
 import { AppError } from '../../core/errors.js';
 import { organization } from '../organizations/service.js';
-import type { Actor,Row } from '../../../../../packages/shared/src/schemas.js';
+import type { Actor } from '../../../../../packages/shared/src/schemas.js';
 export async function buildReport(db:Db,orgId:string,from:string,to:string){
  if(from>to||Date.parse(to)-Date.parse(from)>366*86400000)throw new AppError(422,'REPORT_RANGE','Pilih rentang laporan paling lama 367 hari.');
  const org=await organization(db,orgId);

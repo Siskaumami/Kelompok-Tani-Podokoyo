@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1001399910714",
+    "project_id": "tani-desa-notifications",
+    "storage_bucket": "tani-desa-notifications.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1001399910714:android:ab6a7a34d4aaf35a9a5003",
+        "android_client_info": {
+          "package_name": "id.podokoyo.tanidesa"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAFE6-nt1TvJrk4xCAFet78cGWwaw1oBZA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
