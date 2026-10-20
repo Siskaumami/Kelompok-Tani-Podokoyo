@@ -3,7 +3,40 @@ import { Logo } from './ui';
 
 export function KosabangsaLogoSlot(){return <img className="kosabangsa-logo" src="/kosabangsa-logo.webp" alt="Kosabangsa" width={1487} height={393}/>;}
 export function ProgramIdentity({compact=false}:{compact?:boolean}){return <div className={'program-identity '+(compact?'compact':'')}><KosabangsaLogoSlot/></div>;}
-export function CoBrandIdentity({variant='public'}:{variant?:'public'|'login'|'sidebar'|'footer'}){const context={public:'public-brand',login:'auth-brand',sidebar:'sidebar-brand',footer:'footer-brand'}[variant];return <div className={'co-brand '+context}><Logo/><span className="brand-divider" aria-hidden="true"/><ProgramIdentity compact={variant==='public'||variant==='footer'}/></div>;}
+
+export function CoBrandIdentity({
+  variant = 'public',
+  showPartners = false
+}: {
+  variant?: 'public' | 'login' | 'sidebar' | 'footer';
+  showPartners?: boolean;
+}) {
+  const context = {
+    public: 'public-brand',
+    login: 'auth-brand',
+    sidebar: 'sidebar-brand',
+    footer: 'footer-brand'
+  }[variant];
+
+  return (
+    <div className={'co-brand ' + context}>
+      <Logo />
+
+      {variant === 'login' && showPartners && (
+        <div className="login-partners">
+          <img
+            src="/ditjen-risbang.png"
+            alt="Ditjen Risbang"
+          />
+          <img
+            src="/diktisaintek-berdampak.png"
+            alt="Diktisaintek Berdampak"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
 
 const houses=[
  [1005,441,.46,0],[1026,446,.39,2],[1043,458,.5,1],[1020,464,.48,0],[1069,471,.43,2],

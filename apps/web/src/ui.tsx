@@ -5,7 +5,24 @@ import type { ZodType } from 'zod';
 import { ApiError,request,queryClient,save } from './api';
 import { grams,kgInput,statusNames } from './format';
 export type Data=Record<string,any>;
-export function Logo({compact=false}:{compact?:boolean}){return <Link className="logo" to="/"><span className="logo-mark"><Leaf size={23}/></span>{!compact&&<span>Kelompok Tani<small>Podokoyo</small></span>}</Link>;}
+
+export function Logo({compact = false}: {compact?: boolean}) {
+  return (
+    <Link className="logo program-logo" to="/" aria-label="Kosabangsa Podokoyo">
+      <img
+        src="/kosabangsa-logo.webp"
+        alt="Kosabangsa"
+        width={1487}
+        height={393}
+      />
+      {!compact && <span className="program-location" aria-hidden="true">
+  {'Podokoyo'.split('').map((letter, index) => (
+    <span key={index}>{letter}</span>
+  ))}
+</span>}
+    </Link>
+  );
+}
 export function Badge({value}:{value:string}){return <span className={'badge '+(value==='NEEDS_REVIEW'?'warning':value==='VOIDED'||value==='CANCELLED'?'muted':'')}>{statusNames[value]??value}</span>;}
 export function Empty({title,description,action}:{title:string;description?:string;action?:ReactNode}){return <div className="empty"><span className="empty-icon"><PackageOpen size={30}/></span><h3>{title}</h3>{description&&<p>{description}</p>}{action}</div>;}
 export function ErrorNotice({error,retry}:{error:unknown;retry?:()=>void}){return <div role="alert" className="notice error"><AlertCircle size={19}/><div>{error instanceof Error?error.message:'Terjadi kesalahan saat memuat data.'}{retry&&<button className="text-button" onClick={retry}>Coba lagi <ArrowRight size={14}/></button>}</div></div>;}
