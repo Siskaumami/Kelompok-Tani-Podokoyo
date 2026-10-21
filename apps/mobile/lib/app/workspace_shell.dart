@@ -63,7 +63,7 @@ class _WorkspaceShellState extends ConsumerState<WorkspaceShell> {
                   size: 18,
                   color: selected
                       ? const Color(0xff176f35)
-                      : const Color(0xff57725f),
+                      : const Color(0xffd9eadb),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -74,7 +74,7 @@ class _WorkspaceShellState extends ConsumerState<WorkspaceShell> {
                       fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                       color: selected
                           ? const Color(0xff176f35)
-                          : const Color(0xff57725f),
+                          : const Color(0xffd9eadb),
                     ),
                   ),
                 ),
@@ -97,7 +97,7 @@ class _WorkspaceShellState extends ConsumerState<WorkspaceShell> {
             height: 68,
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 12),
-              child: Align(alignment: Alignment.centerLeft, child: Brand()),
+              child: Align(alignment: Alignment.centerLeft, child: Brand(light: true)),
             ),
           ),
           Expanded(
@@ -105,13 +105,13 @@ class _WorkspaceShellState extends ConsumerState<WorkspaceShell> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               children: [
                 for (var i = 0; i < destinations.length; i++) ...[
-                  if ([1, 3, 6, 9, 10].contains(i)) const Divider(height: 18),
+                  if ([1, 3, 6, 9, 10].contains(i)) const Divider(height: 18, color: Color(0x33ffffff)),
                   _navItem(i, drawer),
                 ],
               ],
             ),
           ),
-          const Divider(height: 1),
+          const Divider(height: 1, color: Color(0x33ffffff)),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
             child: Column(
@@ -124,6 +124,7 @@ class _WorkspaceShellState extends ConsumerState<WorkspaceShell> {
                         MediaQuery.textScalerOf(context).scale(1) >= 1.4;
 
                     final websiteButton = TextButton.icon(
+                      style: TextButton.styleFrom(foregroundColor: Colors.white),
                       onPressed: () async {
                         try {
                           await ref.read(externalLinksProvider).website();
@@ -141,6 +142,7 @@ class _WorkspaceShellState extends ConsumerState<WorkspaceShell> {
                     );
 
                     final logoutButton = TextButton.icon(
+                      style: TextButton.styleFrom(foregroundColor: Colors.white),
                       onPressed: _loggingOut ? null : _logout,
                       icon: const Icon(Icons.logout, size: 16),
                       label: Text(

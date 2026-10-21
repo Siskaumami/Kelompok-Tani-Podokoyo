@@ -78,7 +78,7 @@ class _TaniAppState extends ConsumerState<TaniApp> with WidgetsBindingObserver {
       }
     });
     return MaterialApp.router(
-      title: 'Kelompok Tani Podokoyo',
+      title: 'Kosabangsa Podokoyo',
       debugShowCheckedModeBanner: false,
       theme: appTheme(),
       locale: const Locale('id', 'ID'),

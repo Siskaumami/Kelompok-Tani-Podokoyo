@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 
 abstract final class Tokens {
-  static const accent = Color(0xff148339);
+  static const accent = Color(0xff245c49);
   static const ink = Color(0xff173b27);
   static const muted = Color(0xff607366);
   static const border = Color(0xffdbeade);
-  static const pale = Color(0xffe8fff0);
-  static const workspace = Color(0xfff5faf6);
+  static const pale = Color(0xfff6f5ed);
+  static const workspace = Color(0xfff6f5ed);
   static const panelBorder = Color(0xffdfeae2);
   static const rowBorder = Color(0xffbdd8c4);
   static const rowText = Color(0xff19743a);
-  static const sidebar = Color(0xfffbfefb);
-  static const selected = Color(0xffe4f4e8);
+  static const sidebar = Color(0xff104c2b);
+  static const selected = Color(0xffe7eadb);
   static const badge = Color(0xffe8f5eb);
   static const badgeText = Color(0xff1e6736);
   static const badgeBorder = Color(0xffd9ecde);

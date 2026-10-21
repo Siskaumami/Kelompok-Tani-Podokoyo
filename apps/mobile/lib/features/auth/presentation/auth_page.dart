@@ -114,7 +114,15 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                Text(title, style: Theme.of(context).textTheme.headlineLarge),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontFamily: 'serif',
+                    fontSize: 24,
+                    color: Tokens.ink,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
                 const SizedBox(height: 12),
                 Text(
                   mode == AuthMode.login
@@ -292,69 +300,128 @@ class _AuthPageState extends ConsumerState<AuthPage> {
       ),
     );
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xfff7f7ef),
       body: SafeArea(
         child: LayoutBuilder(
-          builder: (context, c) => SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: c.maxHeight),
-              child: c.maxWidth >= 900
-                  ? IntrinsicHeight(
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              color: Tokens.pale,
-                              padding: const EdgeInsets.all(48),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Brand(),
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text('RUANG KERJA KELOMPOK TANI'),
-                                      const SizedBox(height: 20),
-                                      Text(
-                                        'Catatan yang rapi.\nLangkah yang pasti.',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .headlineLarge,
-                                      ),
-                                      const SizedBox(height: 20),
-                                      const Text(
-                                        'Dari panen hingga penjualan, kelola pekerjaan bersama dalam satu tempat.',
-                                      ),
-                                    ],
-                                  ),
-                                  const Text('Kelompok Tani Podokoyo'),
-                                ],
-                              ),
-                            ),
-                          ),
-                          Expanded(child: form),
-                        ],
+          builder: (context, c) {
+            if (c.maxWidth >= 900 && c.maxHeight >= 650) {
+              return Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.all(44),
+                      decoration: const BoxDecoration(
+                        image: DecorationImage(
+                          image: AssetImage('assets/branding/login-landscape.png'),
+                          fit: BoxFit.cover,
+                        ),
                       ),
-                    )
-                                    : IntrinsicHeight(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Padding(
-                            padding: EdgeInsets.all(24),
-                            child: Brand(),
+                          mode == AuthMode.login
+                              ? const LoginPartnerBrand()
+                              : const Brand(),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'RUANG KERJA KOSABANGSA',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  letterSpacing: 1.6,
+                                  color: Tokens.muted,
+                                ),
+                              ),
+                              const SizedBox(height: 18),
+                              Text(
+                                'Catatan yang rapi.\nLangkah yang pasti.',
+                                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                                  fontFamily: 'serif',
+                                  fontSize: 35,
+                                  fontWeight: FontWeight.w500,
+                                  color: Tokens.ink,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              const Text(
+                                'Dari panen hingga penjualan, kelola pekerjaan bersama dalam satu tempat.',
+                              ),
+                            ],
                           ),
-                          Expanded(
-                            child: form,
-                          ),
+                          const Text('Kosabangsa · Podokoyo'),
                         ],
                       ),
                     ),
-            ),
-          ),
+                  ),
+                  Expanded(child: SingleChildScrollView(child: form)),
+                ],
+              );
+            }
+
+            return SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: c.maxHeight),
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: Image.asset(
+                        'assets/branding/login-landscape.png',
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    const Positioned.fill(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Color(0x33f8f7ef),
+                              Color(0xaaf8f7ef),
+                              Color(0x88f8f7ef),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 22, bottom: 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: mode == AuthMode.login
+                                ? const LoginPartnerBrand()
+                                : const Brand(),
+                          ),
+                          const SizedBox(height: 25),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 24),
+                            child: Text(
+                              'Catatan yang rapi.\nLangkah yang pasti.',
+                              style: TextStyle(
+                                fontFamily: 'serif',
+                                fontSize: 27,
+                                fontWeight: FontWeight.w500,
+                                color: Tokens.ink,
+                                height: 1.06,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 34),
+                          form,
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

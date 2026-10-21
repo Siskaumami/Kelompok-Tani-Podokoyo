@@ -111,6 +111,7 @@ Set-Location $Mobile
 
 Write-Host "Starting Tani Desa..."
 
+
 flutter run --profile -d emulator-5554 `
     --dart-define=API_BASE_URL=http://10.0.2.2:3000 `
-    --dart-define=APP_ORIGIN=http://10.0.2.2:5173
+    --dart-define=APP_ORIGIN=http://localhost:5173

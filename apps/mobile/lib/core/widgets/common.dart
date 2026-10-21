@@ -5,46 +5,86 @@ import '../theme/tokens.dart';
 import '../utils/format.dart';
 
 class Brand extends StatelessWidget {
-  const Brand({super.key, this.compact = false});
+  const Brand({super.key, this.compact = false, this.light = false});
+
   final bool compact;
+  final bool light;
+
   @override
-  Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Container(
-        width: 39,
-        height: 42,
-        decoration: const BoxDecoration(
-          color: Tokens.accent,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(11),
-            topRight: Radius.circular(11),
-            bottomRight: Radius.circular(11),
-            bottomLeft: Radius.circular(3),
+  Widget build(BuildContext context) => Semantics(
+    label: 'Kosabangsa Podokoyo',
+    child: SizedBox(
+      width: compact ? 94 : 132,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Image.asset(
+            'assets/branding/kosabangsa-logo.webp',
+            width: compact ? 94 : 132,
+            fit: BoxFit.contain,
           ),
-        ),
-        child: const Icon(Icons.eco_outlined, color: Tokens.pale, size: 23),
+          if (!compact) ...[
+            const SizedBox(height: 3),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                for (final letter in 'Podokoyo'.split(''))
+                  Text(
+                    letter,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      height: 1.2,
+                      color: light ? const Color(0xffe0eddd) : Tokens.ink,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ],
       ),
-      if (!compact) ...[
-        const SizedBox(width: 10),
-        const Flexible(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Kelompok Tani',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-              ),
-              Text(
-                'Podokoyo',
-                style: TextStyle(fontSize: 12, color: Tokens.muted),
-              ),
-            ],
+    ),
+  );
+}
+
+class LoginPartnerBrand extends StatelessWidget {
+  const LoginPartnerBrand({super.key});
+
+  @override
+  Widget build(BuildContext context) => ConstrainedBox(
+    constraints: const BoxConstraints(maxWidth: 400),
+    child: SizedBox(
+      height: 56,
+      child: Row(
+        children: [
+          const Expanded(
+            flex: 40,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Brand(),
+            ),
           ),
-        ),
-      ],
-    ],
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 26,
+            child: Image.asset(
+              'assets/branding/ditjen-risbang.png',
+              fit: BoxFit.contain,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 34,
+            child: Image.asset(
+              'assets/branding/diktisaintek-berdampak.png',
+              fit: BoxFit.contain,
+            ),
+          ),
+        ],
+      ),
+    ),
   );
 }
 
