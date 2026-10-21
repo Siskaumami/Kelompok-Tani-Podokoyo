@@ -120,7 +120,7 @@ class _SaleEditorState extends State<SaleEditor> {
                     final product = products
                         .where((p) => p.s('item_id') == line.itemId)
                         .firstOrNull;
-                    final price = item?.kind == 'GRADE_A'
+                    final price = (item?.kind == 'GRADE_A' || item?.kind == 'GRADE_B')
                         ? widget.data.organization.number('grade_a_price_rp')
                         : product?.number('price_rp');
                     return Column(
@@ -132,7 +132,7 @@ class _SaleEditorState extends State<SaleEditor> {
                           initialValue: item?.id,
                           isExpanded: true,
                           items: inventory
-                              .where((i) => i.kind != 'GRADE_B')
+                              .where((i) => i.kind == 'GRADE_A' || i.kind == 'GRADE_B' || i.kind == 'FINISHED')
                               .map(
                                 (i) => DropdownMenuItem(
                                   value: i.id,
@@ -170,10 +170,10 @@ class _SaleEditorState extends State<SaleEditor> {
                           enabled: !locked,
                           decoration: InputDecoration(
                             labelText:
-                                'Jumlah (${item?.kind == 'GRADE_A' ? 'kg' : 'unit'})',
+                                'Jumlah (${(item?.kind == 'GRADE_A' || item?.kind == 'GRADE_B') ? 'kg' : 'unit'})',
                           ),
                           keyboardType: TextInputType.numberWithOptions(
-                            decimal: item?.kind == 'GRADE_A',
+                            decimal: (item?.kind == 'GRADE_A' || item?.kind == 'GRADE_B'),
                           ),
                           onChanged: (value) {
                             line.quantity = value;
@@ -192,7 +192,7 @@ class _SaleEditorState extends State<SaleEditor> {
                           keyboardType: TextInputType.number,
                           decoration: InputDecoration(
                             labelText:
-                                'Harga ${item?.kind == 'GRADE_A' ? 'per kg' : 'per unit'} (Rp)',
+                                'Harga ${(item?.kind == 'GRADE_A' || item?.kind == 'GRADE_B') ? 'per kg' : 'per unit'} (Rp)',
                           ),
                           onChanged: (value) {
                             line.price = value;

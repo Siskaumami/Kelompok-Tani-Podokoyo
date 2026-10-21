@@ -16,11 +16,11 @@ export async function recordSale(tx:Db,a:Actor,d:z.infer<typeof saleSchema>):Pro
  const org=await organization(tx,a.org_id),lines:Row[]=[];
  let gross=0n,hpp=0n;
  for(const input of d.items){
-  const i=await item(tx,a.org_id,input.item_id);assert(i.kind!=='GRADE_B','Grade B dialokasikan untuk produksi, bukan penjualan langsung.');
+  const i=await item(tx,a.org_id,input.item_id);
   let unitPrice:string,unitHpp:string,name:string,versionId:string|null=null;
   if(i.kind==='FINISHED'){const p=await product(tx,a.org_id,i.product_id),v=await economics(tx,a.org_id,p.id);name=p.name;unitPrice=input.unit_price_rp??String(v.price_rp);unitHpp=String(v.hpp_rp);versionId=v.id;}
-  else{name='Kentang Grade A';unitPrice=input.unit_price_rp??String(org.grade_a_price_rp);unitHpp=String(org.grade_a_hpp_rp);}
-  const q=BigInt(input.quantity),lineGross=i.kind==='GRADE_A'?kgAmount(q,BigInt(unitPrice)):q*BigInt(unitPrice),lineHpp=i.kind==='GRADE_A'?kgAmount(q,BigInt(unitHpp)):q*BigInt(unitHpp);
+  else{name=i.kind==='GRADE_B'?'Kentang Grade B mentah':'Kentang Grade A';unitPrice=input.unit_price_rp??String(org.grade_a_price_rp);unitHpp=String(org.grade_a_hpp_rp);}
+  const q=BigInt(input.quantity),lineGross=i.kind!=='FINISHED'?kgAmount(q,BigInt(unitPrice)):q*BigInt(unitPrice),lineHpp=i.kind!=='FINISHED'?kgAmount(q,BigInt(unitHpp)):q*BigInt(unitHpp);
   gross+=lineGross;hpp+=lineHpp;
   lines.push({item_id:i.id,product_id:i.product_id,version_id:versionId,kind:i.kind,name_snapshot:name,quantity:input.quantity,unit_price_rp:unitPrice,unit_hpp_rp:unitHpp,gross_rp:checked(lineGross),hpp_rp:checked(lineHpp)});
  }
@@ -29,7 +29,14 @@ export async function recordSale(tx:Db,a:Actor,d:z.infer<typeof saleSchema>):Pro
  const [sale]=await tx.all(sql`INSERT INTO sales(org_id,business_date,channel,external_ref,discount_rp,fee_rp,gross_rp,hpp_rp,notes,created_by) VALUES(${a.org_id},${d.business_date},${d.channel},${d.external_ref},${d.discount_rp},${d.fee_rp},${gross.toString()},${hpp.toString()},${d.notes},${a.id}) RETURNING *`);
  for(const l of lines){
   await tx.all(sql`INSERT INTO sale_lines(org_id,sale_id,item_id,product_id,version_id,kind,name_snapshot,quantity,unit_price_rp,unit_hpp_rp,gross_rp,hpp_rp) VALUES(${a.org_id},${sale.id},${l.item_id},${l.product_id},${l.version_id},${l.kind},${l.name_snapshot},${l.quantity},${l.unit_price_rp},${l.unit_hpp_rp},${l.gross_rp},${l.hpp_rp})`);
-  await move(tx,a,l.item_id,-BigInt(l.quantity),l.kind==='GRADE_A'?'GRADE_A_SALE':'FINISHED_GOOD_SALE','SALE',sale.id);
+  // Reserve OPEN production plans; Grade B sold raw and produced uses one physical ledger.
+  if(l.kind==='GRADE_B'){
+   const [reserved]=await tx.all(sql`SELECT coalesce(sum(planned_g),0)::text AS quantity FROM production_plans WHERE org_id=${a.org_id} AND status='OPEN'`);
+   const current=await item(tx,a.org_id,l.item_id);
+   assert(BigInt(current.balance)-BigInt(l.quantity)>=BigInt(reserved.quantity),'Grade B tersedia di luar alokasi produksi tidak cukup. Ubah rencana produksi terlebih dahulu.','GRADE_B_RESERVED');
+  }
+  const movement=l.kind==='GRADE_A'?'GRADE_A_SALE':l.kind==='GRADE_B'?'GRADE_B_SALE':'FINISHED_GOOD_SALE';
+  await move(tx,a,l.item_id,-BigInt(l.quantity),movement,'SALE',sale.id);
  }
  const previous=(await tx.all(sql`SELECT * FROM sales_day_confirmations WHERE org_id=${a.org_id} AND business_date=${d.business_date}`))[0];
  if(previous?.status==='NO_SALES'){

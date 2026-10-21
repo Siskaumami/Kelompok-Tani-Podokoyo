@@ -10,10 +10,10 @@ export async function buildReport(db:Db,orgId:string,from:string,to:string){
  // Every sale and its lines are read in one PostgreSQL statement snapshot.
  const records=await db.all(sql`SELECT s.*,coalesce(jsonb_agg(jsonb_build_object('name',l.name_snapshot,'kind',l.kind,'quantity',l.quantity::text,'unit_price_rp',l.unit_price_rp::text,'unit_hpp_rp',l.unit_hpp_rp::text,'gross_rp',l.gross_rp::text,'hpp_rp',l.hpp_rp::text)) FILTER(WHERE l.id IS NOT NULL),'[]'::jsonb) AS items FROM sales s LEFT JOIN sale_lines l ON l.org_id=s.org_id AND l.sale_id=s.id WHERE s.org_id=${orgId} AND s.business_date>=${from}::date AND s.business_date<=${to}::date GROUP BY s.id ORDER BY s.business_date,s.created_at,s.id LIMIT 5001`);
  if(records.length>5000)throw new AppError(422,'REPORT_TOO_LARGE','Rentang ini terlalu besar. Pilih periode yang lebih singkat.');
- let gradeA=0n,finished=0n,gross=0n,discount=0n,fees=0n,hpp=0n;let count=0,voided=0;
- for(const s of records){if(s.status==='VOIDED'){voided++;continue;}count++;gross+=BigInt(s.gross_rp);discount+=BigInt(s.discount_rp);fees+=BigInt(s.fee_rp);hpp+=BigInt(s.hpp_rp);for(const l of s.items){if(l.kind==='GRADE_A')gradeA+=BigInt(l.gross_rp);else finished+=BigInt(l.gross_rp);}}
+ let gradeA=0n,gradeB=0n,finished=0n,gross=0n,discount=0n,fees=0n,hpp=0n;let count=0,voided=0;
+ for(const s of records){if(s.status==='VOIDED'){voided++;continue;}count++;gross+=BigInt(s.gross_rp);discount+=BigInt(s.discount_rp);fees+=BigInt(s.fee_rp);hpp+=BigInt(s.hpp_rp);for(const l of s.items){if(l.kind==='GRADE_A')gradeA+=BigInt(l.gross_rp);else if(l.kind==='GRADE_B')gradeB+=BigInt(l.gross_rp);else finished+=BigInt(l.gross_rp);}}
  const net=gross-discount-fees;
- return {organization:{name:org.name,timezone:org.timezone},period:{from,to},generated_at:new Date().toISOString(),totals:{grade_a_gross_rp:gradeA.toString(),finished_gross_rp:finished.toString(),gross_rp:gross.toString(),discount_rp:discount.toString(),fee_rp:fees.toString(),net_rp:net.toString(),hpp_rp:hpp.toString(),profit_rp:(net-hpp).toString(),sale_count:count,voided_count:voided},transactions:records};
+ return {organization:{name:org.name,timezone:org.timezone},period:{from,to},generated_at:new Date().toISOString(),totals:{grade_a_gross_rp:gradeA.toString(),grade_b_gross_rp:gradeB.toString(),finished_gross_rp:finished.toString(),gross_rp:gross.toString(),discount_rp:discount.toString(),fee_rp:fees.toString(),net_rp:net.toString(),hpp_rp:hpp.toString(),profit_rp:(net-hpp).toString(),sale_count:count,voided_count:voided},transactions:records};
 }
 export type Report=Awaited<ReturnType<typeof buildReport>>;
 const rp=(n:string)=>'Rp'+new Intl.NumberFormat('id-ID').format(BigInt(n));
@@ -96,7 +96,7 @@ export async function reportPdf(report:Report,actor:Actor):Promise<Buffer>{
 
  const quantityLabel=(item:any)=>{
   const quantity=Number(item.quantity??0);
-  if(item.kind==='GRADE_A'){
+  if(item.kind==='GRADE_A'||item.kind==='GRADE_B'){
    const kg=quantity/1000;
    return `${new Intl.NumberFormat('id-ID',{maximumFractionDigits:3}).format(kg)} kg`;
   }
@@ -172,6 +172,7 @@ export async function reportPdf(report:Report,actor:Actor):Promise<Buffer>{
 
  const summaryRows=[
   ['Penjualan Grade A',money(report.totals.grade_a_gross_rp)],
+   ['Penjualan Grade B mentah',money(report.totals.grade_b_gross_rp)],
   ['Penjualan produk jadi',money(report.totals.finished_gross_rp)],
   ['Pendapatan kotor',money(report.totals.gross_rp)],
   ['(-) Diskon',money(report.totals.discount_rp)],

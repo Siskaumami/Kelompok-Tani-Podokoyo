@@ -9,6 +9,7 @@ import '../../../core/utils/format.dart';
 
 const reportLabels = <String, String>{
   'grade_a_gross_rp': 'Penjualan Grade A',
+  'grade_b_gross_rp': 'Penjualan Grade B mentah',
   'finished_gross_rp': 'Penjualan produk jadi',
   'gross_rp': 'Pendapatan kotor',
   'discount_rp': 'Diskon',

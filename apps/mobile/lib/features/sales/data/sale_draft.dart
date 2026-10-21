@@ -13,13 +13,13 @@ class SaleDraftLine {
 
 Json saleLinePayload(SaleDraftLine line, List<RecordData> inventory) {
   final item = inventory.where((i) => i.id == line.itemId).firstOrNull;
-  if (item == null || item.kind == 'GRADE_B') {
+  if (item == null) {
     throw const FormatException('Pilih barang yang terjual.');
   }
   return {
     'item_id': item.id,
     'quantity': integerInput(
-      item.kind == 'GRADE_A' ? grams(line.quantity) : line.quantity,
+      item.kind != 'FINISHED' ? grams(line.quantity) : line.quantity,
       positive: true,
     ),
     if (line.price.trim().isNotEmpty) 'unit_price_rp': integerInput(line.price),

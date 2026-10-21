@@ -92,6 +92,30 @@ describe('sales history, idempotency and corrections',()=>{
   const d=saleSchema.parse({business_date:'2026-10-15',channel:'WHATSAPP',items:[{item_id:i.id,quantity:'1250'}]});const s=await transact('raw-sale',d,tx=>sales.recordSale(tx,f.owner,d));expect(s.gross_rp).toBe('18750');expect(s.hpp_rp).toBe('12500');
  });
 });
+  it('sells Grade B raw without consuming production reservations or double-counting finished goods',async()=>{
+   await harvestStock();
+   await db.all(sql`UPDATE organizations SET grade_a_price_rp=15000,grade_a_hpp_rp=10000 WHERE id=${f.orgId}`);
+   const b=await inventory.rawItem(db,f.orgId,'GRADE_B');
+   const planInput=planSchema.parse({product_id:f.product.id,business_date:'2026-10-15',planned_g:'30000'});
+   await transact('grade-b-plan',planInput,tx=>prod.savePlan(tx,f.owner,null,planInput));
+   const make=(items:{item_id:string,quantity:string}[])=>saleSchema.parse({business_date:'2026-10-15',channel:'OFFLINE',items});
+   const tooLarge=make([{item_id:b.id,quantity:'26000'}]);
+   await expect(transact('grade-b-oversold',tooLarge,tx=>sales.recordSale(tx,f.owner,tooLarge))).rejects.toThrow(/alokasi/);
+   const duplicated=make([{item_id:b.id,quantity:'14000'},{item_id:b.id,quantity:'14000'}]);
+   await expect(transact('grade-b-duplicate',duplicated,tx=>sales.recordSale(tx,f.owner,duplicated))).rejects.toThrow(/alokasi/);
+   expect((await inventory.rawItem(db,f.orgId,'GRADE_B')).balance).toBe('55000');
+   const good=make([{item_id:b.id,quantity:'20000'}]);
+   const recorded=await transact('grade-b-sale',good,tx=>sales.recordSale(tx,f.owner,good));
+   expect(recorded.items[0]).toMatchObject({kind:'GRADE_B',name_snapshot:'Kentang Grade B mentah',unit_price_rp:'15000',unit_hpp_rp:'10000'});
+   expect(recorded.gross_rp).toBe('300000');
+   expect(recorded.hpp_rp).toBe('200000');
+   expect((await inventory.rawItem(db,f.orgId,'GRADE_B')).balance).toBe('35000');
+   const rep=await buildReport(db,f.orgId,'2026-10-15','2026-10-15');
+   expect(rep.totals).toMatchObject({grade_a_gross_rp:'0',grade_b_gross_rp:'300000',finished_gross_rp:'0',gross_rp:'300000',hpp_rp:'200000'});
+   await transact('void-grade-b-sale',{},tx=>sales.voidSale(tx,f.owner,recorded.id,'Pencatatan dibatalkan'));
+   expect((await inventory.rawItem(db,f.orgId,'GRADE_B')).balance).toBe('55000');
+   expect((await buildReport(db,f.orgId,'2026-10-15','2026-10-15')).totals.grade_b_gross_rp).toBe('0');
+  });
 describe('physical stock checks',()=>{
  it('creates an adjustment, refuses overlapping checks and detects stale revisions',async()=>{
   await harvestStock();const i=await inventory.rawItem(db,f.orgId,'GRADE_A');const o=await transact('start',{},tx=>opname.startOpname(tx,f.owner,i.id));
