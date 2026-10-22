@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import express,{type Request,type Response,type NextFunction} from 'express';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
@@ -11,6 +11,9 @@ import { sql } from 'drizzle-orm';
 import type { Db } from './core/database.js';
 import { AppError } from './core/errors.js';
 import { config,integrationStatus } from './core/config.js';
+import { seoSiteOrigin, seoHttpStatus, seoRobotsTxt, seoSitemapXml, seoHtml } from './core/seo.js';
+import { seoPublicSnapshot, seoInjectPublic, seoInjectProduct } from './core/seo-public.js';
+import { seoProductRoute, seoProductPath } from '../../../packages/shared/src/seo-product.js';
 import { mutate,hash } from './core/transactions.js';
 import * as S from '../../../packages/shared/src/schemas.js';
 import * as auth from './modules/auth/service.js';
@@ -61,12 +64,13 @@ function deleteAccount(db:Db){
 }
 export function createApp(db:Db){
  const app=express();app.disable('x-powered-by');if(config.TRUST_PROXY_HOPS)app.set('trust proxy',config.TRUST_PROXY_HOPS);
+ const seoOrigin=seoSiteOrigin(config.SITE_URL);
  app.use((req,res,next)=>{res.locals.request_id=randomUUID();res.setHeader('X-Request-Id',res.locals.request_id);next();});
  app.use(helmet({contentSecurityPolicy:{directives:{defaultSrc:["'self'"],scriptSrc:["'self'"],styleSrc:["'self'","'unsafe-inline'"],imgSrc:["'self'",'https:','data:'],connectSrc:["'self'"],objectSrc:["'none'"],frameAncestors:["'none'"],baseUri:["'self'"],formAction:["'self'"],upgradeInsecureRequests:config.NODE_ENV==='production'?[]:null}},referrerPolicy:{policy:'no-referrer'}}));
  app.use('/api',rateLimit({windowMs:60000,limit:300,standardHeaders:'draft-8',legacyHeaders:false,message:{error:{code:'RATE_LIMIT',message:'Permintaan terlalu sering. Tunggu sebentar.'}}}));
  app.use(express.json({limit:'256kb'}));app.use(cookieParser());
  const api=express.Router();app.use('/api/v1',api);
- api.use((_req,res,next)=>{res.setHeader('Cache-Control','no-store');next();});api.use(auth.originGuard);
+ api.use((_req,res,next)=>{res.setHeader('Cache-Control','no-store');res.setHeader('X-Robots-Tag','noindex, nofollow');next();});api.use(auth.originGuard);
  api.get('/health',async(_req,res)=>{try{await db.all(sql`SELECT 1`);respond(res,{status:'ready'});}catch{res.status(503).json({error:{code:'DATABASE_UNAVAILABLE',message:'Database belum siap.'}});}});
  api.get('/public/site',async(_req,res)=>{if(!config.PUBLIC_ORG_SLUG)throw new AppError(503,'PUBLIC_ORG_NOT_CONFIGURED','Profil kelompok belum tersedia.');respond(res,await content.publicData(db,config.PUBLIC_ORG_SLUG));});
  api.get('/public/:slug',async(req,res)=>{const slug=z.string().regex(/^[a-z0-9-]{1,100}$/).parse(req.params.slug);respond(res,await content.publicData(db,slug));});
@@ -145,10 +149,57 @@ export function createApp(db:Db){
   respond(res,{organization_name:org.name,today,counts,today_sales:totals,inventory:await inventory.inventoryList(db,org.id)});
  });
  app.use('/api',(_req,_res,next)=>next(new AppError(404,'NOT_FOUND','Endpoint tidak ditemukan.')));
+  app.get('/robots.txt',(_req,res)=>{res.setHeader('Cache-Control','no-store');res.type('text/plain').send(seoRobotsTxt(seoOrigin));});
+  app.get('/sitemap.xml',async(_req,res)=>{
+    res.setHeader('Cache-Control','no-store');
+    if(!seoOrigin)return res.status(404).type('text/plain').send('Sitemap is inactive until SITE_URL is configured.');
+    if(!config.PUBLIC_ORG_SLUG)return res.status(503).type('text/plain').send('Public organization not configured.');
+    try{
+      const site=seoPublicSnapshot(await content.publicData(db,config.PUBLIC_ORG_SLUG));
+      return res.type('application/xml').send(seoSitemapXml(seoOrigin,site.products));
+    }catch{
+      console.error(JSON.stringify({event:'sitemap_generation_failed'}));
+      return res.status(503).type('text/plain').send('Sitemap temporarily unavailable.');
+    }
+   });
  const web=path.resolve('dist/web');
  if(existsSync(web)){
   app.use(express.static(web,{index:false,maxAge:0,setHeaders:(res,file)=>{if(file.includes('/assets/'))res.setHeader('Cache-Control','public,max-age=31536000,immutable');else res.setHeader('Cache-Control','no-cache');}}));
-  app.get('/{*path}',(_req,res)=>{res.setHeader('Cache-Control','no-store');res.sendFile(path.join(web,'index.html'));});
+  const baseHtml=readFileSync(path.join(web,'index.html'),'utf8');
+  app.get('/{*path}',async(req,res)=>{
+    res.setHeader('Cache-Control','no-store');
+    const productRoute=seoProductRoute(req.path);
+    const isPublic=['/','/desa','/petani','/produk'].includes(req.path) || Boolean(productRoute);
+    if(isPublic){
+      if(!config.PUBLIC_ORG_SLUG){
+        res.setHeader('X-Robots-Tag','noindex, nofollow');
+        return res.status(503).type('html').send(seoHtml(baseHtml,req.path,''));
+      }
+      try{
+        const site=seoPublicSnapshot(await content.publicData(db,config.PUBLIC_ORG_SLUG));
+        if(productRoute){
+          const product=site.products.find(p=>p.id.toLowerCase()===productRoute.id);
+          if(!product){
+            res.setHeader('X-Robots-Tag','noindex, nofollow');
+            return res.status(404).type('html').send(seoHtml(baseHtml,req.path,''));
+          }
+          const canonicalPath=seoProductPath(product);
+          if(req.path!==canonicalPath)return res.redirect(301,canonicalPath);
+          if(!seoOrigin)res.setHeader('X-Robots-Tag','noindex, nofollow');
+          return res.status(200).type('html').send(seoInjectProduct(
+            seoHtml(baseHtml,req.path,seoOrigin,product),site,product));
+        }
+        if(!seoOrigin)res.setHeader('X-Robots-Tag','noindex, nofollow');
+        return res.status(200).type('html').send(seoInjectPublic(seoHtml(baseHtml,req.path,seoOrigin),req.path,site));
+      }catch{
+        console.error(JSON.stringify({event:'public_html_render_failed',path:req.path}));
+        res.setHeader('X-Robots-Tag','noindex, nofollow');
+        return res.status(503).type('html').send(seoHtml(baseHtml,req.path,''));
+      }
+    }
+    res.setHeader('X-Robots-Tag','noindex, nofollow');
+    return res.status(seoHttpStatus(req.path)).type('html').send(seoHtml(baseHtml,req.path,seoOrigin));
+   });
  }
  app.use((error:unknown,_req:Request,res:Response,_next:NextFunction)=>{
   let e:any=error;let depth=0;while(e?.cause&&depth++<4)e=e.cause;
